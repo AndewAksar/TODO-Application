@@ -1,0 +1,61 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: ["main"]
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.12"]
+        service-path:
+          - "."
+
+    defaults:
+      run:
+        working-directory: ${{ matrix.service-path }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: "pip"
+          cache-dependency-path: |
+            ${{ matrix.service-path }}/pyproject.toml
+            ${{ matrix.service-path }}/requirements*.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+
+          # Вариант A: pyproject.toml с dev-extra (рекомендуется)
+          if [ -f "pyproject.toml" ]; then
+            pip install -e ".[dev]" || pip install -e .
+          # Вариант B: requirements.txt
+          elif [ -f "requirements.txt" ]; then
+            pip install -r requirements.txt
+          else
+            echo "No pyproject.toml or requirements.txt found in $PWD"
+            exit 1
+          fi
+
+      - name: Ruff (lint)
+        run: ruff check .
+
+      - name: Ruff (format check)
+        run: ruff format --check .
+
+      - name: Pytest
+        run: pytest -q
