@@ -64,3 +64,13 @@ infra/         # Docker, Kafka, Nginx configuration
 docs/          # Architecture, contracts, ADRs, runbooks
 tests/         # Test suites
 .github/       # CI workflows, templates
+```
+## Documentation index
+
+- Architecture: `docs/architecture/`
+- REST & event contracts: `docs/contracts/` (REST planned)
+- Tasks (step-by-step development): `docs/tasks/000-index.md`
+- Architectural decisions: `docs/adr/`
+- Operational notes: `docs/runbooks/`
+- Project roadmap: `ROADMAP.md`
+- Project specification: `TASK.md`

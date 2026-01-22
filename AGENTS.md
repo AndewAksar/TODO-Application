@@ -2,6 +2,7 @@
 
 This repository is a **training project in production style**: multi-user TODO app with REST API + SPA, microservices, Kafka (event-driven), JWT auth, async Python stack. The priority is **clarity of code** and **modern best practices**, suitable for a strong junior+/middle portfolio.
 
+Before implementing any change, read the relevant task file from docs/tasks/ and follow its scope/constraints/acceptance criteria.
 ## 0) Project “truths” (must not be violated silently)
 - **PostgreSQL is the single source of truth**. Kafka is **NOT** a state store. :contentReference[oaicite:3]{index=3}
 - System is **event-driven**: significant state changes produce domain events.
@@ -97,6 +98,12 @@ If commands cannot be run in the environment, state that explicitly and provide 
 
 ## 7) Work format (how to execute tasks)
 For each task the agent takes on, follow this structure:
+
+## Task execution source
+Before implementing any change, the agent MUST:
+1) read `docs/tasks/000-index.md`
+2) read the specific task file referenced there (or provided by the user)
+3) follow that task’s Scope/Non-scope/Constraints/Acceptance criteria strictly
 
 ### A) Plan (decomposition)
 - List subtasks in order.
