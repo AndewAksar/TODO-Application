@@ -38,18 +38,18 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
+            python -m pip install --upgrade pip
 
-          # Вариант A: pyproject.toml с dev-extra (рекомендуется)
-          if [ -f "pyproject.toml" ]; then
-            pip install -e ".[dev]" || pip install -e .
-          # Вариант B: requirements.txt
-          elif [ -f "requirements.txt" ]; then
-            pip install -r requirements.txt
-          else
-            echo "No pyproject.toml or requirements.txt found in $PWD"
-            exit 1
-          fi
+            python - <<'PY'
+            import tomllib, subprocess
+            from pathlib import Path
+
+            data = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))
+            reqs = data["project"]["optional-dependencies"]["dev"]
+            print("Installing dev dependencies from pyproject.toml:")
+            print("\n".join(reqs))
+            subprocess.check_call(["python", "-m", "pip", "install", *reqs])
+            PY
 
       - name: Ruff (lint)
         run: ruff check .
