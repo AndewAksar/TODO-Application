@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/schemas/events/task.completed.schema.json",
+  "title": "task.completed",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["event_id", "type", "occurred_at", "user_id", "task_id"],
+  "properties": {
+    "event_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique event identifier used for idempotency and tracing."
+    },
+    "type": {
+      "type": "string",
+      "const": "task.completed",
+      "description": "Event type discriminator."
+    },
+    "occurred_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the domain fact occurred (ISO8601)."
+    },
+    "user_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "User identifier (owner of the task)."
+    },
+    "task_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Task identifier."
+    }
+  }
+}

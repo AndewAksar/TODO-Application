@@ -5,7 +5,7 @@ description = "Event-driven TODO app (FastAPI + Kafka) with scheduler and mailer
 readme = "README.md"
 requires-python = ">=3.12"
 license = { text = "MIT" }
-authors = [{ name = "Andrey" }]
+authors = [{ name = "Andrew A." }]
 # Корневой проект — "meta": он не обязан быть импортируемым пакетом.
 # Dependencies здесь можно оставить пустыми, а зависимости держать в optional groups.
 dependencies = []

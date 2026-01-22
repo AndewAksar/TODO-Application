@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/schemas/events/email.daily_digest.requested.schema.json",
+  "title": "email.daily_digest.requested",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "event_id",
+    "type",
+    "occurred_at",
+    "user_id",
+    "email",
+    "stats",
+    "undone_titles"
+  ],
+  "properties": {
+    "event_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique event identifier for idempotent mail sending."
+    },
+    "type": {
+      "type": "string",
+      "const": "email.daily_digest.requested",
+      "description": "Event type discriminator."
+    },
+    "occurred_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the digest request was generated (ISO8601)."
+    },
+    "user_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "User identifier."
+    },
+    "email": {
+      "type": "string",
+      "minLength": 3,
+      "description": "Target email address (format validation may be added later)."
+    },
+    "stats": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["total", "done", "undone"],
+      "properties": {
+        "total": { "type": "integer", "minimum": 0 },
+        "done": { "type": "integer", "minimum": 0 },
+        "undone": { "type": "integer", "minimum": 0 }
+      },
+      "description": "Aggregated task statistics for the user."
+    },
+    "undone_titles": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "List of titles for tasks that are not done."
+    }
+  }
+}
