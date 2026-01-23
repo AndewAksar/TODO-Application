@@ -4,7 +4,7 @@ import logging
 import logging.config
 import os
 from contextvars import ContextVar
-from typing import Any, Dict
+from typing import Any
 
 request_id_var: ContextVar[str] = ContextVar("request_id", default="-")
 
@@ -27,7 +27,7 @@ def configure_logging(*, service_name: str, level: str | None = None) -> None:
         "%(asctime)s | %(levelname)s | %(service)s | %(name)s | rid=%(request_id)s | %(message)s"
     )
 
-    config: Dict[str, Any] = {
+    config: dict[str, Any] = {
         "version": 1,
         "disable_existing_loggers": False,
         "filters": {
