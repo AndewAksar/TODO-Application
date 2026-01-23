@@ -8,10 +8,12 @@ from typing import Any
 
 request_id_var: ContextVar[str] = ContextVar("request_id", default="-")
 
+
 class RequestIdFilter(logging.Filter):
     def filter(self, record: logging.LogRecord) -> bool:
         record.request_id = request_id_var.get()
         return True
+
 
 def configure_logging(*, service_name: str, level: str | None = None) -> None:
     """
@@ -33,9 +35,7 @@ def configure_logging(*, service_name: str, level: str | None = None) -> None:
         "filters": {
             "request_id": {"()": RequestIdFilter},
         },
-        "formatters": {
-            "default": {"format": log_format}
-        },
+        "formatters": {"default": {"format": log_format}},
         "handlers": {
             "console": {
                 "class": "logging.StreamHandler",
