@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Event-driven TODO app (FastAPI + Kafka) with scheduler and mailer services"
 readme = "README.md"
 requires-python = ">=3.12"
-license = { text = "MIT" }
+license = "MIT"
 authors = [{ name = "Andrew A." }]
 # Корневой проект — "meta": он не обязан быть импортируемым пакетом.
 # Dependencies здесь можно оставить пустыми, а зависимости держать в optional groups.
@@ -13,12 +13,12 @@ dependencies = []
 [project.optional-dependencies]
 # Общие dev инструменты для всех сервисов
 dev = [
-  "ruff>=0.6.0",
-  "mypy>=1.10.0",
-  "pytest>=8.0.0",
-  "pytest-asyncio>=0.23.0",
-  "httpx>=0.27.0",           # удобно для API тестов (async client)
-  "types-python-dateutil",   # пример типов, если понадобится
+  "ruff==0.14.14",
+  "mypy==1.19.1",
+  "pytest==9.0.2",
+  "pytest-asyncio==1.3.0",
+  "httpx==0.28.1",
+  "types-python-dateutil==2.9.0.20251115",
 ]
 
 # --- API service dependencies (FastAPI + DB + JWT + Kafka producer + outbox)
@@ -32,7 +32,6 @@ api = [
   "alembic>=1.13.1",
   "python-jose[cryptography]>=3.3.0",
   "passlib[bcrypt]>=1.7.4",
-  # Kafka: выбери ОДИН клиент и придерживайся его везде
   "confluent-kafka>=2.5.0",
 ]
 
@@ -58,7 +57,6 @@ mailer = [
 [tool.ruff]
 line-length = 100
 target-version = "py312"
-# Для монорепо удобно явно сказать, где код
 src = ["services"]
 exclude = [
   ".venv",
@@ -70,7 +68,6 @@ exclude = [
 ]
 
 [tool.ruff.lint]
-# Хороший “взрослый минимум” без истерики
 select = [
   "E", "F", "W",      # pycodestyle/pyflakes
   "I",                # isort
@@ -80,11 +77,10 @@ select = [
   "C4",               # comprehensions
 ]
 ignore = [
-  "E501",             # длину строк отдаём line-length + форматтеру
+  "E501",
 ]
 
 [tool.ruff.lint.per-file-ignores]
-# Тесты обычно более “болтливые”
 "**/tests/**" = ["B008", "SIM117"]
 
 [tool.ruff.format]
@@ -103,11 +99,9 @@ strict_optional = true
 pretty = true
 show_error_codes = true
 
-# Монорепо: указываем, где искать код
 mypy_path = "services"
 files = ["services"]
 
-# Асинхронный стек и сторонние либы часто без типов — лучше отключить шум
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
