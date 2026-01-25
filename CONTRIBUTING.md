@@ -68,3 +68,11 @@ pytest -q
 
 ```bash
   pre-commit install
+```
+
+Разово прогнать на всём репозитории pre-commit:
+```bash
+  pre-commit run --all-files
+```
+
+В этом проекте используется pyenv. Необходимая версия Python указана в файле .python-version.
