@@ -1,0 +1,90 @@
+name: docker-smoke
+
+on:
+  pull_request:
+  push:
+    branches: [ main ]
+
+jobs:
+  docker-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # На ubuntu-latest docker compose уже есть, но Buildx полезен для кеша
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Compose config (lint)
+        run: docker compose config
+
+      - name: Build images
+        run: docker compose build
+
+      - name: Up (detached)
+        run: docker compose up -d
+
+      - name: Wait for health
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          REQUIRED=("postgres" "zookeeper" "kafka" "api")
+
+          health_of() {
+            local svc="$1"
+            local cid
+            cid="$(docker compose ps -q "$svc" 2>/dev/null || true)"
+            if [[ -z "$cid" ]]; then
+              echo "missing"
+              return 0
+            fi
+
+            docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' "$cid" 2>/dev/null || echo "unknown"
+          }
+
+          echo "Waiting for services to become healthy..."
+          for i in {1..90}; do
+            all_ok=1
+
+            for svc in "${REQUIRED[@]}"; do
+              status="$(health_of "$svc")"
+              if [[ "$status" != "healthy" && "$status" != "running" ]]; then
+                all_ok=0
+                echo "  - $svc: $status"
+              fi
+            done
+
+            if [[ "$all_ok" == "1" ]]; then
+              echo "All required services are ready."
+              exit 0
+            fi
+
+            sleep 2
+          done
+
+          echo "Timed out waiting for health."
+          docker compose ps
+          docker compose logs --no-color --tail=200
+          exit 1
+
+      - name: Smoke HTTP (api + nginx)
+        run: |
+          set -euo pipefail
+          curl -fsS http://localhost:8008/health
+          curl -fsS http://localhost:8080/ | head -n 20
+
+      - name: Show compose ps
+        if: always()
+        run: docker compose ps
+
+      - name: Logs on failure
+        if: failure()
+        run: docker compose logs --no-color --tail=300
+
+      - name: Down
+        if: always()
+        run: docker compose down -v
