@@ -2,8 +2,8 @@ from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+# services/api-gateway (service root)
 BASE_DIR = Path(__file__).resolve().parents[1]
-# parents[3] -> TODO-Application (корень репо)
 
 
 ENV_FILE = BASE_DIR / ".env"
