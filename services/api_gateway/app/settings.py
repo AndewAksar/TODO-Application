@@ -2,7 +2,7 @@ from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-# services/api-gateway (service root)
+# services/api_gateway (service root)
 BASE_DIR = Path(__file__).resolve().parents[1]
 
 

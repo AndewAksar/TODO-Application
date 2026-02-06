@@ -11,11 +11,11 @@ This repository contains a production-style training project: an event-driven TO
 
 ## Components (high level)
 - **frontend/**: static placeholder for the future SPA client.
-- **services/todo-service**: main REST API for task management (CRUD, "done" transitions).
-- **services/auth-service**: user registration/login, JWT issuing.
-- **services/scheduler-service**: daily (00:00) digest job; emits digest-request events.
-- **services/mailer-service**: consumes events and sends emails; must be idempotent.
-- **services/api-gateway**: optional gateway/BFF layer (planned; can be used to serve SPA + route APIs).
+- **services/todo_service**: main REST API for task management (CRUD, "done" transitions).
+- **services/auth_service**: user registration/login, JWT issuing.
+- **services/scheduler_service**: daily (00:00) digest job; emits digest-request events.
+- **services/mailer_service**: consumes events and sends emails; must be idempotent.
+- **services/api_gateway**: optional gateway/BFF layer (planned; can be used to serve SPA + route APIs).
 - **services/shared**: shared schemas/types; considered protected core.
 
 ## Event-driven flow (examples)
@@ -36,14 +36,14 @@ This repository contains a production-style training project: an event-driven TO
 
 ```mermaid
 flowchart LR
-  SPA[frontend/index.html (placeholder)] -->|HTTP| GW[api-gateway (optional)]
-  SPA -->|HTTP| TODO[todo-service]
-  SPA -->|HTTP| AUTH[auth-service]
+  SPA[frontend/index.html (placeholder)] -->|HTTP| GW[api_gateway (optional)]
+  SPA -->|HTTP| TODO[todo_service]
+  SPA -->|HTTP| AUTH[auth_service]
 
   TODO -->|produce events| KAFKA[(Kafka: topic 'events')]
-  SCHED[scheduler-service] -->|produce digest event| KAFKA
+  SCHED[scheduler_service] -->|produce digest event| KAFKA
 
-  KAFKA -->|consume| MAIL[mailer-service]
+  KAFKA -->|consume| MAIL[mailer_service]
   TODO --> DB[(PostgreSQL)]
   AUTH --> DB
   SCHED --> DB

@@ -1,5 +1,5 @@
 import time
 
-print("scheduler-service started")
+print("scheduler_service started")
 while True:
     time.sleep(60)

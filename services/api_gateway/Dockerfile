@@ -18,7 +18,7 @@ COPY pyproject.toml /app/
 RUN pip install --no-cache-dir ".[api]"
 
 # 3. Копируем код api-сервиса
-COPY services/api-gateway /app
+COPY services/api_gateway /app
 
 EXPOSE 8000
 
