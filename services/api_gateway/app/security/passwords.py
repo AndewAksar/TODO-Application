@@ -51,7 +51,7 @@ def verify_password(plain_password: str, password_hash: str) -> bool:
         raise TypeError("error: password_hash must be a string")
 
     try:
-        pass
+        return _pwd_context.verify(plain_password, password_hash)
     except Exception:
         # Битый или неподдерживаемый хеш считаем несовпадением.
         return False
