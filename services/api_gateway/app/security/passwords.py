@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import cast
+
 from passlib.context import CryptContext
 
 _pwd_context = CryptContext(
@@ -29,7 +31,7 @@ def hash_password(plain_password: str) -> str:
     if not plain_password:
         raise ValueError("error: plain_password must not be empty")
 
-    return _pwd_context.hash(plain_password)
+    return cast(str, _pwd_context.hash(plain_password))
 
 
 def verify_password(plain_password: str, password_hash: str) -> bool:
@@ -51,7 +53,7 @@ def verify_password(plain_password: str, password_hash: str) -> bool:
         raise TypeError("error: password_hash must be a string")
 
     try:
-        return _pwd_context.verify(plain_password, password_hash)
+        return cast(bool, _pwd_context.verify(plain_password, password_hash))
     except Exception:
         # Битый или неподдерживаемый хеш считаем несовпадением.
         return False

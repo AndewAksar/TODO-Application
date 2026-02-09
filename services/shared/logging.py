@@ -17,13 +17,13 @@ class RequestIdFilter(logging.Filter):
 
 def configure_logging(*, service_name: str, level: str | None = None) -> None:
     """
-    Configure logging for a service.
-
-    - Output to stdout.
-    - Single consistent format.
-    - request_id is injected via ContextVar (for future HTTP/Kafka correlation).
+    Настройка логирования для сервиса.
+    - Вывод в стандартный поток вывода.
+    - Единый согласованный формат.
+    - request_id внедряется через ContextVar (для будущей корреляции HTTP/Kafka).
     """
-    lvl = (level or os.getenv("LOG_LEVEL", "INFO")).upper()
+    raw = level if level is not None else os.getenv("LOG_LEVEL") or "INFO"
+    lvl = raw.upper()
 
     log_format = (
         "%(asctime)s | %(levelname)s | %(service)s | %(name)s | rid=%(request_id)s | %(message)s"

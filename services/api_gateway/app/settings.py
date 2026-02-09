@@ -27,4 +27,12 @@ class Settings(BaseSettings):
     JWT_EXPIRES_MINUTES: int = 60
 
 
-settings = Settings()
+def load_settings() -> Settings:
+    s = Settings()  # type: ignore[call-arg]
+    # (опционально) явная проверка, чтобы упасть с понятной ошибкой, если env пустой
+    if not s.DATABASE_URL:
+        raise RuntimeError("DATABASE_URL is not set")
+    return s
+
+
+settings = load_settings()

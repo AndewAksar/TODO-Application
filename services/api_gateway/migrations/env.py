@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 from logging.config import fileConfig
+from typing import cast
 
 from alembic import context
 from sqlalchemy import pool
@@ -17,14 +18,14 @@ if config.config_file_name is not None:
 # --- импортируем настройки/базу/модели приложения ---
 import app.models  # noqa: E402,F401  # важно: чтобы модели попали в Base.metadata
 from app.db import Base  # noqa: E402
-from app.settings import settings  # noqa: E402
+from services.api_gateway.app.settings import settings  # noqa: E402
 
 target_metadata = Base.metadata
 
 
 def _get_database_url() -> str:
     # должен быть формата: postgresql+asyncpg://...
-    return settings.DATABASE_URL
+    return cast(str, settings.DATABASE_URL)
 
 
 def run_migrations_offline() -> None:
