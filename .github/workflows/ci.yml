@@ -57,5 +57,8 @@ jobs:
       - name: Ruff (format check)
         run: ruff format --check .
 
+      - name: Mypy (type check)
+        run: mypy .
+
       - name: Pytest
         run: pytest -q
