@@ -18,7 +18,7 @@ if config.config_file_name is not None:
 # --- импортируем настройки/базу/модели приложения ---
 import app.models  # noqa: E402,F401  # важно: чтобы модели попали в Base.metadata
 from app.db import Base  # noqa: E402
-from services.api_gateway.app.settings import settings  # noqa: E402
+from app.settings import settings  # noqa: E402
 
 target_metadata = Base.metadata
 
