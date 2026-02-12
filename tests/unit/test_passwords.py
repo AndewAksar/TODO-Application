@@ -1,6 +1,8 @@
 import pytest
 from services.api_gateway.app.security.passwords import hash_password, verify_password
 
+pytestmark = pytest.mark.unit
+
 
 def test_hash_password_returns_string_and_not_plain() -> None:
     plain_password = "password0123456789"
