@@ -130,9 +130,27 @@ format:
 typecheck:
 	$(COMPOSE) exec $(API_SVC) mypy .
 
-.PHONY: test
+.PHONY: test test-unit test-integration test-contract test-all test-flaky
 test:
-	$(COMPOSE) exec $(API_SVC) pytest -q
+	$(COMPOSE) exec $(API_SVC) pytest -m "not flaky"
+
+test-unit:
+	$(COMPOSE) exec $(API_SVC) pytest -m "unit and not flaky"
+
+test-integration:
+	$(COMPOSE) exec $(API_SVC) pytest -m "integration and not flaky"
+
+test-contract:
+	$(COMPOSE) exec $(API_SVC) pytest -m "contract and not flaky"
+
+test-all:
+	$(COMPOSE) exec $(API_SVC) pytest -m "not flaky"
+
+test-flaky:
+	$(COMPOSE) exec $(API_SVC) pytest -m "flaky"
+
+test-docker:
+	docker compose --profile test run --rm api-tests
 
 # --- DB helpers
 .PHONY: db-shell

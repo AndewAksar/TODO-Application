@@ -15,10 +15,13 @@ RUN apt-get update \
 COPY pyproject.toml /app/
 
 # 2. Устанавливаем зависимости api-сервиса (включая alembic)
-RUN pip install --no-cache-dir ".[api]"
+RUN pip install --no-cache-dir ".[api,test]"
 
 # 3. Копируем код api-сервиса
-COPY services/api_gateway /app
+COPY services /app/services
+
+# 4. Копируем тесты
+COPY tests /app/tests
 
 EXPOSE 8000
 
