@@ -55,6 +55,13 @@ mailer = [
   "confluent-kafka>=2.5.0",
 ]
 
+# --- Tests service dependencies
+test = [
+    "pytest",
+    "pytest-asyncio",
+    "httpx",
+]
+
 [tool.ruff]
 line-length = 100
 target-version = "py312"
@@ -107,9 +114,16 @@ ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-q"
+addopts = "-q -ra --strict-markers"
 asyncio_mode = "auto"
 filterwarnings = [
   "error",
   "ignore::DeprecationWarning",
+]
+markers = [
+    "unit: fast isolated unit tests",
+    "integration: integration tests with external systems",
+    "contract: contract/schema validation tests",
+    "e2e: end-to-end critical path tests",
+    "flaky: unstable tests (temporary quarantine)",
 ]
