@@ -1,76 +1,76 @@
-# TODO Application
+# Приложение TODO
 
-Event-driven TODO application built with an asynchronous Python stack.
-This is a **training project in production style**, designed to explore modern backend technologies and architectural patterns while keeping the codebase clear and approachable.
+Приложение TODO, управляемое событиями, созданное с использованием асинхронного стека Python.
+Это **учебный проект в производственном стиле**, предназначенный для изучения современных бэкенд-технологий и архитектурных шаблонов, при этом код должен быть понятным и доступным.
 
-The project is intended for a **junior+/middle backend portfolio**.
+Проект предназначен для **портфолио начинающего/среднего уровня бэкенд-разработчика**.
 
----
+## Цели проекта
 
-## Project goals
+- Практика **FastAPI + Pydantic v2** в реалистичном REST API
+- Использование **SQLAlchemy 2.0 (асинхронный)** с **миграциями Alembic**
+- Понимание **событийно-ориентированной архитектуры** с **Kafka**
+- Создание системы, состоящей из **нескольких сервисов**
+- Применение **Docker Compose** для локальной разработки
+- Настройка **контролей качества CI** (линтинг, типизация, тесты, покрытие кода)
+- Сохранение кода **простым, понятным и читаемым**
 
-- Practice **FastAPI + Pydantic v2** in a realistic REST API
-- Use **SQLAlchemy 2.0 (async)** with **Alembic migrations**
-- Understand **event-driven architecture** with **Kafka**
-- Build a system composed of **multiple services**
-- Apply **Docker Compose** for local development
-- Set up **CI quality gates** (linting, typing, tests, coverage)
-- Keep the code **simple, explicit, and readable**
-
-This repository prioritizes **clarity over cleverness**.
+В этом репозитории приоритет отдается **ясности, а не излишней изобретательности**.
 
 ---
 
-## Key features (planned)
+## Ключевые особенности (планируемые)
 
-- Async REST API (FastAPI)
-- JWT-based authentication
-- PostgreSQL as the single source of truth
-- Kafka for domain events and background processing
-- Microservices:
-  - API service
-  - Auth service
-  - Scheduler service (cron-like logic)
-  - Mailer service (event consumer)
-- Docker Compose–based local environment
-- pytest-based test suite with coverage
+- Асинхронный REST API (FastAPI)
+- Аутентификация на основе JWT
+- PostgreSQL как единый источник достоверной информации
+- Kafka для обработки событий предметной области и фоновой обработки
+- Микросервисы:
+
+- Сервис API
+
+- Сервис аутентификации
+- Сервис планировщика (логика, подобная cron)
+- Сервис рассылки почты (потребитель событий)
+- Локальная среда на основе Docker Compose
+- Набор тестов на основе pytest с покрытием кода
 - GitHub Actions CI
 
 ---
 
-## High-level architecture
+## Архитектура высокого уровня
 
-The system follows an **event-driven architecture**:
+Система использует **событийно-ориентированную архитектуру**:
 
-- API services write state changes to PostgreSQL
-- Significant state changes emit domain events to Kafka
-- Background services react to events asynchronously
-- Services do not call each other directly by default
+- Сервисы API записывают изменения состояния в PostgreSQL
+- Значительные изменения состояния генерируют события предметной области в Kafka
+- Фоновые сервисы реагируют на события асинхронно
+- Сервисы по умолчанию не вызывают друг друга напрямую
 
-Kafka provides **at-least-once delivery**, so consumers are expected to be idempotent.
+Kafka обеспечивает **доставку как минимум один раз**, поэтому ожидается, что потребители будут идемпотентными.
 
-More details:
-- Architecture overview: `docs/architecture/`
-- Event contracts: `docs/contracts/events/`
-- REST contracts: `docs/contracts/rest/`
+Более подробная информация:
+- Обзор архитектуры: `docs/architecture/`
+- Контракты событий: `docs/contracts/events/`
+- Контракты REST: `docs/contracts/rest/`
 
 ---
 
-## Repository structure
+## Структура репозитория
 
 ```text
-services/      # Backend services (API, auth, scheduler, mailer, shared)
-infra/         # Docker, Kafka, Nginx configuration
-docs/          # Architecture, contracts, ADRs, runbooks
-tests/         # Test suites
-.github/       # CI workflows, templates
+services/ # Сервисы бэкэнда (API, аутентификация, планировщик, отправка почты, общие ресурсы)
+infra/ # Конфигурация Docker, Kafka, Nginx
+docs/ # Архитектура, контракты, ADR, руководства по запуску
+tests/ # Наборы тестов
+.github/ # Рабочие процессы CI, шаблоны
 ```
-## Documentation index
+## Индекс документации
 
-- Architecture: `docs/architecture/`
-- REST & event contracts: `docs/contracts/` (REST planned)
-- Tasks (step-by-step development): `docs/tasks/000-index.md`
-- Architectural decisions: `docs/adr/`
-- Operational notes: `docs/runbooks/`
-- Project roadmap: `ROADMAP.md`
-- Project specification: `TASK.md`
+- Архитектура: `docs/architecture/`
+- Контракты REST и событий: `docs/contracts/` (планируется REST)
+- Задачи (пошаговая разработка): `docs/tasks/000-index.md`
+- Архитектурные решения: `docs/adr/`
+- Операционные Примечания: `docs/runbooks/`
+- Дорожная карта проекта: `ROADMAP.md`
+- Спецификация проекта: `TASK.md`

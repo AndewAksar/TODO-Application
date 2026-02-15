@@ -1,183 +1,108 @@
-# AGENTS.md — AI Agent (Codex) Operating Guide
+# AGENTS.md — Регламент работы ИИ-агента
 
-This repository is a **training project in production style**: multi-user TODO app with REST API + SPA, microservices, Kafka (event-driven), JWT auth, async Python stack. The priority is **clarity of code** and **modern best practices**, suitable for a strong junior+/middle portfolio.
+Этот репозиторий развивается по принципам надёжной и безопасной разработки.
+ИИ-агент — исполнитель с ограниченными полномочиями.
+Любое важное поведение должно быть подтверждено тестами и проверками CI.
 
-Before implementing any change, read the relevant task file from docs/tasks/ and follow its scope/constraints/acceptance criteria.
-## 0) Project “truths” (must not be violated silently)
-- **PostgreSQL is the single source of truth**. Kafka is **NOT** a state store. :contentReference[oaicite:3]{index=3}
-- System is **event-driven**: significant state changes produce domain events.
-- Services **do not call each other directly** (no synchronous inter-service RPC as the default). External effects (email) happen **only via events**. :contentReference[oaicite:4]{index=4}
-- Kafka delivery semantics: **at-least-once** (duplicates are possible). :contentReference[oaicite:5]{index=5}
+---
 
-## 1) Repo map (high level)
-- `services/api` — main REST API (FastAPI), writes to Postgres, produces domain events
-- `services/auth` — registration/login, JWT issuance
-- `services/scheduler` — daily cron logic, reads DB, produces digest events
-- `services/mailer` — consumes events, sends emails, implements idempotency
-- `services/shared` — shared schemas/types/utilities (may be changed if needed, but impact must be documented)
-- `infra/*` — docker/kafka/nginx
-- `docs/*` — architecture, contracts, ADR, runbooks
-- `tests/*` — test suites
+## 0) Главный закон: работай только по Task Brief
+ИИ-агент выполняет задачи **только** при наличии явного Task Brief (от пользователя/в задаче).
 
-## 2) Tech stack (expected)
-- Python 3.12+
-- FastAPI + Pydantic v2
-- SQLAlchemy 2.0 async + Alembic
-- PostgreSQL
-- Kafka (producer/consumer)
-- Docker Compose
-- GitHub Actions
-- pytest (+ coverage)
+Task Brief обязан содержать:
+- цель (Goal)
+- границы (Scope / Non-scope)
+- список файлов для чтения (Read-only)
+- список файлов для изменения (Writable)
+- критерии готовности (DoD)
+- команды проверок (Commands)
 
-(Keep solutions modern but explainable. Prefer the simplest approach that is still correct.)
+Если Task Brief отсутствует или неполный — НЕ начинать работу.
 
-## 3) What the agent is allowed to change (YES, but with discipline)
-The agent **may**:
-- change REST contracts
-- change Kafka event schemas
-- add new services
-- modify infra (docker/kafka/nginx)
-- refactor existing code without an explicit task
-- modify `services/shared` **only when explicitly required by the task**.
-Changes to `services/shared` or `docs/contracts/*` are considered **high-impact**.
-They require additional justification and safeguards (see section 3.1).
+---
 
-However, every such change must be **explicitly surfaced** in the output:
-- what changed
-- why it changed
-- what breaks / migration steps (if any)
-- what tests were updated/added
+## 1) Разрешённые изменения (по умолчанию)
+По умолчанию агент **может менять только то**, что указано в секции Writable Task Brief.
 
-In other words: “YES to change” does **not** mean “silent breaking changes”.
+Любые изменения вне Writable запрещены.
 
-## 4) Protected core: shared & contracts
+Запрещено по умолчанию:
+- рефакторинг “заодно”
+- переезды директорий/переименования
+- изменения инфраструктуры (docker/nginx/kafka)
+- изменения контрактов
+- изменения shared-кода
+- изменения CI/Makefile/pre-commit
 
-The following directories form the **protected core of the system**:
+Если требуется — это должно быть явно разрешено в Task Brief.
 
-- `services/shared`
-- `docs/contracts/*`
-- `services/shared/schemas/*`
+---
 
-### Default rule
-By default, the agent MUST NOT modify the protected core.
+## 2) Protected core (НЕ трогать без явного разрешения)
+По умолчанию агент НЕ имеет права изменять:
 
-### Allowed only if
-The agent may modify the protected core **only if at least one condition is met**:
-1) The task explicitly requests such a change, OR
-2) The agent clearly explains why the change is unavoidable.
+- `services/shared/**`
+- `docs/contracts/**`
+- `services/shared/schemas/**`
+- `docs/policies/**`
+- `docs/runbooks/**`
+- `.github/**` (CI)
+- `Makefile`, `pyproject.toml`, `pre-commit` конфигурации
 
-### Mandatory requirements
-Any change to the protected core MUST include:
-- a clear explanation of **why** the change is needed
-- a list of **impacted services**
-- updated or new **tests** covering the change
-- updated documentation (contracts / catalog / rules)
+Исключение: только если Task Brief явно разрешает изменения
+и требует перечислить последствия/миграции/тесты.
 
-Silent or undocumented changes to the protected core are forbidden.
+---
 
-## 5) Golden rules (non-negotiable)
-1) **Clarity first**: readable code > clever code.
-2) Prefer **small, incremental steps**: decompose work into tasks/subtasks.
-3) **No random dependencies**: do not add a new dependency without a strong reason (and explain it).
-4) **No logging format changes** unless explicitly requested.
-5) **No directory reshuffles** unless explicitly requested (or you clearly justify and document it).
-6) If you change contracts/schemas/infra: update docs and tests accordingly.
-7) **Shared & contracts are stable by default**:
-   do not change them unless the task explicitly requires it or you justify it clearly.
+## 3) Правила качества (без компромиссов)
+Запрещено:
+- ослаблять существующие тесты/ассерты ради “зелёного”
+- удалять тесты без явного разрешения
+- “чинить” flaky ретраями без устранения причины
+- ловить широкий `Exception` вместо корректной обработки
+- добавлять зависимости без явного разрешения
 
-## 6) Required quality gate (must be run and reported)
-Before finalizing any change, the agent MUST run and explicitly report:
-- `make lint`  (ruff lint)
-- `make format` (ruff format)
-- `make typecheck` (mypy; may be gradual, but must not regress)
-- `make test` (pytest)
-- `make coverage` (coverage must be **>= 80%** overall, unless task explicitly allows temporary lower coverage)
+Если тест падает:
+- исправь причину,
+- либо измени тест ТОЛЬКО если контракт изменился (и это явно указано).
 
-**In the final message, include the exact commands you ran and their outcome.**
-If commands cannot be run in the environment, state that explicitly and provide what would be run locally/CI.
+---
 
-## 7) Work format (how to execute tasks)
-For each task the agent takes on, follow this structure:
+## 4) Тесты обязательны
+Если изменение влияет на поведение:
+- добавить/обновить тесты.
 
-## Task execution source
-Before implementing any change, the agent MUST:
-1) read `docs/tasks/000-index.md`
-2) read the specific task file referenced there (or provided by the user)
-3) follow that task’s Scope/Non-scope/Constraints/Acceptance criteria strictly
+Если фиксится баг:
+- сначала регрессионный тест, который падает,
+- затем фикс,
+- затем зелёный прогон.
 
-### A) Plan (decomposition)
-- List subtasks in order.
-- Identify touched services/modules.
-- Identify contracts/events impacted.
+---
 
-### B) Implementation constraints
-- Keep diffs small.
-- Prefer adding tests alongside changes.
-- If refactoring: do it in a separate commit/subtask when possible.
+## 5) Обязательные проверки перед сдачей
+Перед финальным ответом агент обязан:
+- выполнить команды из Task Brief (lint/type/tests/coverage и т.п.)
+- или явно сказать, что выполнение невозможно в среде агента,
+  и перечислить команды, которые должны быть запущены локально/в CI.
 
-### C) Deliverables (always)
-- Short summary of changes
-- List of changed files
-- List of tests added/updated
-- Commands executed + results
+---
 
-## 8) Contracts (REST + Events)
-### REST
-Minimum endpoints expected (may evolve): registration/login + CRUD tasks. :contentReference[oaicite:6]{index=6}
+## 6) Формат результата (обязательный отчёт)
+В финальном сообщении агент обязан выдать:
 
-When changing REST:
-- update `docs/contracts/` (or OpenAPI, if present)
-- update API tests
+1) Что сделано (коротко)
+2) Список изменённых файлов
+3) Какие тесты добавлены/изменены (сценарии)
+4) Какие команды прогнаны и результат
+5) Какие допущения сделаны
+6) Что потенциально может сломаться (если применимо)
 
-### Kafka events
-Events are JSON, immutable, include `event_id` and `occurred_at`. :contentReference[oaicite:7]{index=7}
-Known event types include:
-- `task.created` (TaskCreated)
-- `task.completed` (TaskCompleted)
-- `email.daily_digest.requested` (DailyDigestRequested) :contentReference[oaicite:8]{index=8}
+---
 
-When changing events:
-- keep backward compatibility if possible (add fields rather than rename/remove)
-- if breaking is necessary, bump version / change event type naming and document it
-- update producer + consumer + tests
+## 7) Если задача “на тестирование”
+Правила дополнительно:
+- unit-тесты не используют сеть/БД/брокер
+- integration/contract тесты — только если явно требуется
+- flaky недопустимы, quarantined допускается только по Task Brief
 
-## 9) Scheduler rules (daily digest)
-Scheduler runs daily (00:00), aggregates per-user stats, emits `DailyDigestRequested`, and **does not send emails directly**. :contentReference[oaicite:9]{index=9}
-
-## 10) Mailer rules (idempotency is mandatory)
-Mailer consumes from topic `events`. For `DailyDigestRequested`:
-- check `event_id` (idempotency)
-- send email
-- persist `event_id` as processed
-- commit offset only after successful send :contentReference[oaicite:10]{index=10}
-
-For changes to `services/shared` or `docs/contracts/*`:
-- contract tests are mandatory
-- schema validation must not regress
-- changes without tests are considered incomplete
-
-Idempotency storage: `processed_events(event_id PK, processed_at)` :contentReference[oaicite:11]{index=11}
-
-## 11) Testing expectations
-- unit tests for domain logic
-- API tests (FastAPI TestClient)
-- integration tests are welcome if they are stable in Docker Compose :contentReference[oaicite:12]{index=12}
-
-When adding a feature:
-- add at least one unit test (if applicable)
-- add/extend API test for endpoint behavior
-- if events are produced/consumed, add tests for serialization/handling
-
-## 12) Documentation expectations
-Docs are part of the product. If you change behavior, update docs:
-- `docs/architecture/` — system overview
-- `docs/contracts/` — REST & events
-- `docs/adr/` — when decision changes direction or introduces a new approach
-- `docs/runbooks/` — how to operate/debug
-
-## 13) Safety & secrets
-- Never commit secrets.
-- Use `.env` locally and `.env.example` for documentation.
-- Log safely: do not log passwords/tokens.
-
-— End of AGENTS.md
+— конец файла
