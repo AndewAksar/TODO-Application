@@ -26,7 +26,7 @@ class UserRepository:
         result = await self._session.execute(stmt)
         return result.scalar_one_or_none()
 
-    async def get_by_id(self, id: int) -> User | None:
+    async def get_by_id(self, user_id: int) -> User | None:
         if not isinstance(id, int):
             raise TypeError("user_id must be int")
 
@@ -34,7 +34,9 @@ class UserRepository:
         result = await self._session.execute(stmt)
         return result.scalar_one_or_none()
 
-    async def create_user(self, email: str, password_hash: str, username: str) -> User:
+    async def create_user(
+        self, email: str, password_hash: str, username: str | None = None
+    ) -> User:
         if not isinstance(email, str):
             raise TypeError("email must be str")
         if not isinstance(password_hash, str):
@@ -45,9 +47,10 @@ class UserRepository:
         user = User(
             email=email,
             password_hash=password_hash,
+            username=username,
         )
 
-        self.session.add(user)
+        self._session.add(user)
 
         # flush отправляет INSERT в БД, но не коммитит транзакцию.
         # После flush у user появляется id (если PK генерится БД).
