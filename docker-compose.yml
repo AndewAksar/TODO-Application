@@ -74,6 +74,7 @@ services:
             context: .
             dockerfile: services/api_gateway/Dockerfile
         environment:
+            PYTHONPATH: /app/services/api_gateway
             DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://todo:todo@postgres:5432/todo}
             KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS:-kafka:9092}
         depends_on:
