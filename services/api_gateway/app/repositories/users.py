@@ -27,7 +27,7 @@ class UserRepository:
         return result.scalar_one_or_none()
 
     async def get_by_id(self, user_id: int) -> User | None:
-        if not isinstance(id, int):
+        if not isinstance(user_id, int):
             raise TypeError("user_id must be int")
 
         stmt = select(User).where(User.id == id)
