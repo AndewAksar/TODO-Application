@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=ENV_FILE, extra="ignore")
 
     # --- DB ---
-    DATABASE_URL: str
+    DATABASE_URL: str | None = None
 
     # --- JWT ---
     # Optional, чтобы можно было запускать без JWT и не ломались Alembic/миграции.
@@ -28,11 +28,7 @@ class Settings(BaseSettings):
 
 
 def load_settings() -> Settings:
-    s = Settings()  # type: ignore[call-arg]
-    # (опционально) явная проверка, чтобы упасть с понятной ошибкой, если env пустой
-    if not s.DATABASE_URL:
-        raise RuntimeError("DATABASE_URL is not set")
-    return s
+    return Settings()  # type: ignore[call-arg]
 
 
 settings = load_settings()
