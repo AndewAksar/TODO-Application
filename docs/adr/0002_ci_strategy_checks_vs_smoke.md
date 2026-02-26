@@ -33,6 +33,9 @@ CI разделён на два независимых workflow:
 - логические ошибки кода
 - инфраструктурные/runtime ошибки
 
+Observability требования (health endpoints, runtime checks)
+исполняются через docker-smoke pipeline.
+
 ## Alternatives Considered
 
 1. Один объединённый pipeline — отклонено (сложная диагностика).

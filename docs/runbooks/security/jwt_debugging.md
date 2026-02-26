@@ -137,3 +137,5 @@
 * JWT-токен
 * JWT-секрет
 * полный `Authorization` header
+
+Логирование должно соответствовать требованиям OBSERVABILITY.md и SECURITY_POLICY.md.

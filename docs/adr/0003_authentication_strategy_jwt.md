@@ -20,7 +20,9 @@ Accepted
 - Ограниченный срок действия токена
 - Без хранения сессий на сервере
 
-Секрет задаётся через environment variables.
+Секрет задаётся через environment variables.\
+Ошибки аутентификации и инфраструктурные сбои
+должны быть различимы на уровне observability.
 
 ## Alternatives Considered
 
