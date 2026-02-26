@@ -77,6 +77,13 @@ jobs:
           curl -fsS http://localhost:8008/health
           curl -fsS http://localhost:8080/ | head -n 20
 
+      # OBSERVABILITY: protected endpoint must not be accessible without auth
+      - name: Observability check — unauthorized access
+        run: |
+          set -euo pipefail
+          code=$(curl -o /dev/null -s -w "%{http_code}" http://localhost:8008/me)
+          test "$code" = "401"
+
       - name: Show compose ps
         if: always()
         run: docker compose ps
