@@ -1,3 +1,5 @@
+from typing import cast
+
 import pytest
 from jose import jwt
 from services.api_gateway.app.security.jwt import TokenError, create_access_token, decode_token
@@ -13,7 +15,14 @@ def jwt_test_settings(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def _encode_token(payload: dict[str, object]) -> str:
-    return jwt.encode(payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
+    return cast(
+        str,
+        jwt.encode(
+            payload,
+            settings.JWT_SECRET_KEY,
+            algorithm=settings.JWT_ALGORITHM,
+        ),
+    )
 
 
 def test_create_access_token_then_decode_returns_user_id() -> None:
