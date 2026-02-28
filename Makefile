@@ -19,6 +19,8 @@ PROJECT_NAME := todo-kafka
 
 # Services (must match docker-compose.yml service names)
 API_SVC := api
+API_TESTS_SVC := api-tests
+TOOL := $(COMPOSE) --profile test run --rm $(API_TESTS_SVC)
 SCHEDULER_SVC := scheduler
 MAILER_SVC := mailer
 FRONTEND_SVC := frontend
@@ -120,15 +122,15 @@ shell-mailer:
 # --- Quality (default inside API container)
 .PHONY: lint
 lint:
-	$(COMPOSE) exec $(API_SVC) ruff check .
+	$(TOOL) ruff check .
 
 .PHONY: format
 format:
-	$(COMPOSE) exec $(API_SVC) ruff format .
+	$(TOOL) ruff format .
 
 .PHONY: typecheck
 typecheck:
-	$(COMPOSE) exec $(API_SVC) mypy .
+	$(TOOL) mypy .
 
 .PHONY: test test-unit test-integration test-contract test-all test-flaky
 test:

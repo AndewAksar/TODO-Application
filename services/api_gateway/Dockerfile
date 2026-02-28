@@ -1,4 +1,4 @@
-FROM python:3.12-slim
+FROM python:3.12-slim AS base
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
@@ -6,23 +6,33 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 
 
-# curl нужен только для docker healthcheck
+# curl нужен для healthcheck (и иногда для debug)
 RUN apt-get update \
     && apt-get install -y --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/*
 
-# 1. Копируем pyproject (source of truth для зависимостей)
+# Копируем pyproject (source of truth для зависимостей)
 COPY pyproject.toml /app/
 
-# 2. Устанавливаем зависимости api-сервиса (включая alembic)
-RUN pip install --no-cache-dir ".[api,test]"
+# ---------------- runtime ----------------
+FROM base AS runtime
 
-# 3. Копируем код api-сервиса
+# Ставим только runtime-зависимости сервиса
+RUN pip install --no-cache-dir ".[api]"
+
+# В runtime тесты НЕ копируем
 COPY services /app/services
 
-# 4. Копируем тесты
+EXPOSE 8000
+CMD ["uvicorn", "services.api_gateway.app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+
+# ---------------- tooling ----------------
+FROM base AS tooling
+
+# Ставим только runtime-зависимости сервиса и dev-зависимости
+RUN pip install --no-cache-dir ".[api,test]" ruff mypy
+
+COPY services /app/services
 COPY tests /app/tests
 
-EXPOSE 8000
-
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["python", "-m", "pytest", "-m", "not flaky"]
