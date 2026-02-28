@@ -2,10 +2,11 @@ from __future__ import annotations
 
 from collections.abc import AsyncGenerator
 
-# SessionLocal — это "фабрика" (sessionmaker), которая создаёт AsyncSession.
-# Она уже сконфигурирована в app/db.py через engine = create_async_engine(...).
-from app.db import SessionLocal
 from sqlalchemy.ext.asyncio import AsyncSession
+
+# SessionLocal — это "фабрика" (sessionmaker), которая создаёт AsyncSession.
+# Она уже сконфигурирована в services/api_gateway/app/db.py через engine = create_async_engine(...).
+from services.api_gateway.app.db import SessionLocal
 
 
 async def get_session() -> AsyncGenerator[AsyncSession, None]:

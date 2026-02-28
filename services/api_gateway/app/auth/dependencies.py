@@ -2,13 +2,14 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from app.api.deps import get_session
-from app.models import User
-from app.repositories.users import UserRepository
-from app.security.jwt import TokenError, decode_token
 from fastapi import Depends, Header, HTTPException, status
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from services.api_gateway.app.api.deps import get_session
+from services.api_gateway.app.models import User
+from services.api_gateway.app.repositories.users import UserRepository
+from services.api_gateway.app.security.jwt import TokenError, decode_token
 
 UNAUTHORIZED = HTTPException(
     status_code=status.HTTP_401_UNAUTHORIZED,

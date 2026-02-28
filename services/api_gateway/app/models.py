@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from app.db import Base
 from sqlalchemy import (
     Boolean,
     DateTime,
@@ -14,6 +13,8 @@ from sqlalchemy import (
     func,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from services.api_gateway.app.db import Base
 
 
 class User(Base):
