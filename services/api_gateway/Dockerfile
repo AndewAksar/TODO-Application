@@ -11,14 +11,17 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Копируем pyproject (source of truth для зависимостей)
-COPY pyproject.toml /app/
+# uv для детерминированной установки
+RUN pip install --no-cache-dir uv
+
+# Копируем pyproject (source of truth для зависимостей) + lock
+COPY pyproject.toml uv.lock /app/
 
 # ---------------- runtime ----------------
 FROM base AS runtime
 
-# Ставим только runtime-зависимости сервиса
-RUN pip install --no-cache-dir ".[api]"
+# Ставим строго по lock только runtime extras (runtime-зависимости сервиса)
+RUN uv sync --frozen --no-install-project --extra api
 
 # В runtime тесты НЕ копируем
 COPY services /app/services
@@ -29,8 +32,8 @@ CMD ["uvicorn", "services.api_gateway.app.main:app", "--host", "0.0.0.0", "--por
 # ---------------- tooling ----------------
 FROM base AS tooling
 
-# Ставим только runtime-зависимости сервиса и dev-зависимости
-RUN pip install --no-cache-dir ".[api,test]" ruff mypy
+# Ставим runtime-зависимости сервиса и dev-зависимости, строго по lock: api + test + dev
+RUN uv sync --frozen --no-install-project --extra api --extra test --extra dev
 
 COPY services /app/services
 COPY tests /app/tests
