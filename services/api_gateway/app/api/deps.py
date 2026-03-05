@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 # SessionLocal — это "фабрика" (sessionmaker), которая создаёт AsyncSession.
 # Она уже сконфигурирована в services/api_gateway/app/db.py через engine = create_async_engine(...).
-from services.api_gateway.app.db import SessionLocal
+from services.api_gateway.app.db import get_sessionmaker
 
 
 async def get_session() -> AsyncGenerator[AsyncSession, None]:
@@ -24,6 +24,7 @@ async def get_session() -> AsyncGenerator[AsyncSession, None]:
     - возвращает соединение в пул
     - защищает от утечек ресурсов
     """
+    SessionLocal = get_sessionmaker()
     async with SessionLocal() as session:
         # Здесь мы "передаём" сессию наружу (в FastAPI).
         yield session
