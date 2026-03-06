@@ -148,11 +148,11 @@ lint-local:
 	$(RUFF) check .
 
 format-local:
-    @echo "Running LOCAL format (host venv)"
+	@echo "Running LOCAL format (host venv)"
 	$(RUFF) format .
 
 typecheck-local:
-    @echo "Running LOCAL mypy (host venv)"
+	@echo "Running LOCAL mypy (host venv)"
 	$(MYPY) .
 
 .PHONY: test test-unit test-integration test-contract test-flaky
@@ -203,7 +203,7 @@ check-local: lint-local typecheck-local test-local
 
 .PHONY: test-docker
 test-docker:
-	$(TOOL)
+	$(TOOL) $(PYTEST) -m "not flaky"
 
 # --- DB helpers
 .PHONY: db-shell
