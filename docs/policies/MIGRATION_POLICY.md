@@ -96,12 +96,11 @@ alembic upgrade head
 ```
 Это **операционная операция**.
 
-Она может выполняться:
+Canonical execution workflow:
 
-- в runtime container;
-- в tooling container;
-- в CI pipeline;
-- в deployment pipeline.
+- выполняется через **tooling container** (`api-tooling`) в локальной разработке и CI;
+- может выполняться в deployment pipeline как операционная процедура rollout;
+- не должна использовать runtime container как primary workspace.
 
 ---
 
@@ -164,9 +163,8 @@ Canonical workflow генерации миграций:
 Назначение:
 
 - запуск приложения;
-- применение миграций (`upgrade head`).
 
-Runtime container **не является canonical средой генерации миграций**.
+Runtime container **не является primary workstation для migration workflow** (ни для `revision`, ни для локального `upgrade`).
 
 ---
 
@@ -180,7 +178,8 @@ Runtime container **не является canonical средой генерац�
 - ruff;
 - mypy;
 - служебные команды разработки;
-- генерация миграций.
+- генерация миграций;
+- применение миграций в локальной/CI migration-проверке.
 
 Tooling container должен:
 
