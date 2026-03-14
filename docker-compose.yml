@@ -125,7 +125,7 @@ services:
         networks:
             [todo_net]
 
-    api-tests:
+    api-tooling:
         build:
             context: .
             dockerfile: services/api_gateway/Dockerfile

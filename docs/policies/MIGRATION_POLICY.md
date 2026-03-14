@@ -172,7 +172,7 @@ Runtime container **не является canonical средой генерац�
 
 ### 6.2 Tooling container
 
-`api-tests`
+`api-tooling`
 
 Назначение:
 

@@ -19,8 +19,8 @@ PROJECT_NAME := todo-kafka
 
 # Services (must match docker-compose.yml service names)
 API_SVC := api
-API_TESTS_SVC := api-tests
-TOOL := $(COMPOSE) --profile test run --rm $(API_TESTS_SVC)
+API_TOOLING_SVC := api-tooling
+TOOL := $(COMPOSE) --profile test run --rm $(API_TOOLING_SVC)
 PY := python
 PYTEST := $(PY) -m pytest
 SCHEDULER_SVC := scheduler

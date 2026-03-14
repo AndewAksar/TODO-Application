@@ -72,6 +72,6 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Docker tests (api-tests)
+      - name: Docker tests (api-tooling)
         run: |
-          docker compose --profile test run --rm api-tests
+          docker compose --profile test run --rm api-tooling
