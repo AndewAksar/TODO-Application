@@ -210,7 +210,7 @@ test-docker:
 db-shell:
 	$(COMPOSE) exec $(DB_SVC) psql -U $$POSTGRES_USER -d $$POSTGRES_DB
 
-# --- Alembic (inside API container)
+# --- Alembic (inside tooling container)
 .PHONY: migrate
 migrate:
 	$(TOOL) alembic upgrade head
@@ -220,4 +220,4 @@ migrate:
 .PHONY: makemigration
 makemigration:
 	@if [ -z "$(M)" ]; then echo "ERROR: Provide message: make makemigration M=\"your message\""; exit 1; fi
-	$(COMPOSE) exec $(API_SVC) alembic revision -m "$(M)"
+	$(TOOL) alembic revision -m "$(M)"
