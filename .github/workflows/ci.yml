@@ -75,3 +75,55 @@ jobs:
       - name: Docker tests (api-tooling)
         run: |
           docker compose --profile test run --rm api-tooling
+
+  migration-check:
+      runs-on: ubuntu-latest
+      timeout-minutes: 15
+      env:
+          COMPOSE_PROJECT_NAME: ci-migration-check
+
+      steps:
+          - name: Checkout
+            uses: actions/checkout@v4
+
+          - name: Set up Docker Buildx
+            uses: docker/setup-buildx-action@v3
+
+          - name: Ensure clean compose state
+            run: docker compose down -v --remove-orphans
+
+          - name: Start postgres on clean volume
+            run: docker compose up -d postgres
+
+          - name: Wait for postgres health
+            shell: bash
+            run: |
+                set -euo pipefail
+
+                cid="$(docker compose ps -q postgres)"
+                if [ -z "$cid" ]; then
+                    echo "postgres container not found"
+                    exit 1
+                fi
+
+                for i in $(seq 1 30); do
+                    status="$(docker inspect --format='{{if .State.Health}}{{.State.Health.Status}}{{else}}no-healthcheck{{end}}' "$cid")"
+                    if [ "$status" = "healthy" ]; then
+                        echo "postgres is healthy"
+                        exit 0
+                    fi
+                    echo "waiting for postgres health... current status: $status"
+                    sleep 2
+                done
+
+                echo "postgres did not become healthy in time"
+                docker compose ps
+                docker compose logs postgres
+                exit 1
+
+          - name: Apply Alembic migrations via tooling container
+            run: docker compose --profile test run --rm --no-deps api-tooling alembic upgrade head
+
+          - name: Down
+            if: always()
+            run: docker compose down -v --remove-orphans
