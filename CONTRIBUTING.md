@@ -94,31 +94,109 @@
 - без точки в конце;
 - отвечает на вопрос: **«что делает этот коммит?»**
 
-## Локальный запуск проверок
+---
 
-Минимальный набор перед PR:
+# Проверки качества кода
+
+В проекте используются два режима проверки:
+1. **Host environment** — быстрые проверки в локальном `.venv`
+2. **Docker tooling environment** — проверки в контейнере `api-tooling`
+
+Docker-режим максимально приближен к CI.
+
+---
+
+## Быстрые проверки на хосте
+
+Используются для быстрого цикла разработки.
+Требуется активированное виртуальное окружение:
 
 ```bash
-  # линтер + форматирование
-ruff check .
-ruff format .
-
-# типы (если включены)
-mypy .
-
-# тесты
-pytest -q
+  source .venv/bin/activate
 ```
-
-Установить хуки:
-
+Линтер:
 ```bash
-  pre-commit install
+  make lint-local
 ```
-
-Разово прогнать на всём репозитории pre-commit:
 ```bash
-  pre-commit run --all-files
+  ruff check .
+```
+Форматирование:
+```bash
+  make format-local
+```
+```bash
+  ruff format .
+```
+Проверка типов:
+```bash
+  make typecheck-local
+```
+```bash
+  mypy .
+```
+Запуск тестов (требуется переменная окружения `DATABASE_URL`).
+
+Пример:
+```bash
+  DATABASE_URL='postgresql+asyncpg://x:x@localhost:5432/x' make test-local
+```
+```bash
+  make test-local-unit
+  make test-local-contract
+  make test-local-integration
 ```
 
-В этом проекте используется pyenv. Необходимая версия Python указана в файле .python-version.
+---
+
+## Полная проверка в Docker
+Этот режим максимально близок к CI.
+Он использует контейнер api-tooling.
+Контейнер содержит:
+- pytest
+- ruff
+- mypy
+- Alembic
+- dev/test зависимости
+
+Линтер
+```bash
+  make lint
+```
+Форматирование
+```bash
+  make format
+```
+Проверка типов
+```bash
+  make typecheck
+```
+Тесты
+```bash
+  make test
+```
+
+---
+
+## Минимальный набор перед Pull Request
+
+Перед созданием PR рекомендуется выполнить:
+```bash
+  make lint
+  make typecheck
+  make test
+```
+или локально:
+```bash
+  make check-local
+```
+
+---
+
+## Проверка структуры тестов
+
+Проверить сбор тестов:
+```bash
+  docker compose --profile test run --rm api-tooling python -m pytest --collect-only -q
+```
+---
