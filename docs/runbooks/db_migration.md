@@ -118,7 +118,7 @@
 ## 8. Этап 5. Проверить факт применения схемы к базе
 ### 8.1. Посмотреть список таблиц в Postgres
 ```bash
-  docker compose exec postgres psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "\dt"
+  docker compose exec postgres sh -lc 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "\dt"'
 ```
 ### 8.2. Если переменные неизвестны — посмотреть их в контейнере
 ```bash
@@ -126,7 +126,7 @@
 ```
 ### 8.3. Проверить зарегистрированные таблицы SQLAlchemy metadata
 ```bash
-  docker compose --profile test run --rm api-tooling python -c "import app.models; from app.db import Base; print(sorted(Base.metadata.tables.keys()))"
+  docker compose --profile test run --rm api-tooling python -c "import services.api_gateway.app.models as models; from services.api_gateway.app.db import Base; print(sorted(Base.metadata.tables.keys()))"
 ```
 ### 8.4. Что проверяем
 Нужно сопоставить:
