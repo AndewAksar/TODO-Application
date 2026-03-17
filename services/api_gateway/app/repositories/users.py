@@ -31,7 +31,7 @@ class UserRepository:
         if not isinstance(user_id, int):
             raise TypeError("user_id must be int")
 
-        stmt = select(User).where(User.id == id)
+        stmt = select(User).where(User.id == user_id)
         result = await self._session.execute(stmt)
         return result.scalar_one_or_none()
 
