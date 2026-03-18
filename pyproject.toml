@@ -115,7 +115,6 @@ ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["services/api_gateway"]
 addopts = "-q -ra --strict-markers"
 asyncio_mode = "auto"
 filterwarnings = [
