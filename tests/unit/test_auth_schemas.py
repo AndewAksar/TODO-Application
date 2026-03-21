@@ -100,7 +100,7 @@ def test_auth_request_schema_rejects_missing_password(
 
 @pytest.mark.parametrize("schema_cls", [RegisterRequest, LoginRequest])
 def test_auth_request_schema_rejects_unknown_fields(
-    schema_cls: type[RegisterRequest, LoginRequest],
+    schema_cls: type[RegisterRequest | LoginRequest],
 ) -> None:
     with pytest.raises(ValidationError):
         schema_cls.model_validate(
