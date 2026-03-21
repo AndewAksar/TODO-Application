@@ -65,6 +65,32 @@ def test_auth_request_schema_rejects_empty_password(
 
 
 @pytest.mark.parametrize("schema_cls", [RegisterRequest, LoginRequest])
+def test_auth_request_schema_rejects_too_short_password(
+    schema_cls: type[RegisterRequest | LoginRequest],
+) -> None:
+    with pytest.raises(ValidationError):
+        schema_cls.model_validate(
+            {
+                "email": "test@example.com",
+                "password": "short",
+            }
+        )
+
+
+@pytest.mark.parametrize("schema_cls", [RegisterRequest, LoginRequest])
+def test_auth_request_schema_rejects_too_long_password(
+    schema_cls: type[RegisterRequest | LoginRequest],
+) -> None:
+    with pytest.raises(ValidationError):
+        schema_cls.model_validate(
+            {
+                "email": "test@example.com",
+                "password": "a" * 129,
+            }
+        )
+
+
+@pytest.mark.parametrize("schema_cls", [RegisterRequest, LoginRequest])
 def test_auth_request_schema_rejects_missing_password(
     schema_cls: type[RegisterRequest | LoginRequest],
 ) -> None:
