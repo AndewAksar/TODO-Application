@@ -5,7 +5,7 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, EmailStr, StringConstraints
 
-NonEmptyPassword = Annotated[str, StringConstraints(min_length=1)]
+PasswordStr = Annotated[str, StringConstraints(min_length=8, max_length=128, strip_whitespace=True)]
 
 
 class AuthSchema(BaseModel):
@@ -14,12 +14,12 @@ class AuthSchema(BaseModel):
 
 class RegisterRequest(AuthSchema):
     email: EmailStr
-    password: NonEmptyPassword
+    password: PasswordStr
 
 
 class LoginRequest(AuthSchema):
     email: EmailStr
-    password: NonEmptyPassword
+    password: PasswordStr
 
 
 class TokenResponse(AuthSchema):
