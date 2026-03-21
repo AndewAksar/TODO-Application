@@ -191,6 +191,14 @@ Docker-режим максимально приближен к CI.
   make check-local
 ```
 
+Установить хуки:
+```bash
+  pre-commit install
+```
+Разово прогнать на всём репозитории pre-commit:
+```bash
+  pre-commit run --all-files
+```
 ---
 
 ## Проверка структуры тестов
