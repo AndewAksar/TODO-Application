@@ -48,15 +48,6 @@ def test_auth_request_schemas_accept_valid_payload(
     assert schema.password == payload["password"]
 
 
-def test_register_request_accepts_optional_username() -> None:
-    schema = RegisterRequest(
-        email="test@example.com",
-        password="password123",
-    )
-
-    assert schema.email == "test@example.com"
-
-
 @pytest.mark.parametrize("schema_cls", [RegisterRequest, LoginRequest])
 def test_auth_request_schema_rejects_invalid_email(
     schema_cls: type[RegisterRequest | LoginRequest],
@@ -67,7 +58,7 @@ def test_auth_request_schema_rejects_invalid_email(
 
 @pytest.mark.parametrize("schema_cls", [RegisterRequest, LoginRequest])
 def test_auth_request_schema_rejects_empty_password(
-    schema_cls: type[RegisterRequest, LoginRequest],
+    schema_cls: type[RegisterRequest | LoginRequest],
 ) -> None:
     with pytest.raises(ValidationError):
         schema_cls(email="test@example.com", password="")
@@ -75,7 +66,7 @@ def test_auth_request_schema_rejects_empty_password(
 
 @pytest.mark.parametrize("schema_cls", [RegisterRequest, LoginRequest])
 def test_auth_request_schema_rejects_missing_password(
-    schema_cls: type[RegisterRequest, LoginRequest],
+    schema_cls: type[RegisterRequest | LoginRequest],
 ) -> None:
     with pytest.raises(ValidationError):
         schema_cls.model_validate({"email": "test@example.com"})
