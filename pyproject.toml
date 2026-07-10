@@ -33,7 +33,7 @@ api = [
   "alembic>=1.13.1",
   "python-jose[cryptography]>=3.3.0",
   "passlib>=1.7.4",
-  "bcrypt>=4,<5",
+  "bcrypt<4.1",
   "confluent-kafka>=2.5.0",
   "email-validator>=2.3.0",
 ]
