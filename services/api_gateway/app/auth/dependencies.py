@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import Depends, Header, HTTPException, status
+from fastapi import Depends, HTTPException, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -23,27 +24,18 @@ SERVICE_UNAVAILABLE = HTTPException(
 )
 
 
-def _extract_bearer_token(authorization: str | None) -> str:
-    if authorization is None:
-        raise UNAUTHORIZED
-
-    parts = authorization.split()
-    if len(parts) != 2 or parts[0].lower() != "bearer":
-        raise UNAUTHORIZED
-
-    token = parts[1]
-
-    return token
+bearer_scheme = HTTPBearer(auto_error=False)
 
 
 async def get_current_user(
     session: Annotated[AsyncSession, Depends(get_session)],
-    authorization: str | None = Header(default=None),
+    credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer_scheme)],
 ) -> User:
-    token = _extract_bearer_token(authorization)
+    if credentials is None:
+        raise UNAUTHORIZED
 
     try:
-        decoded = decode_token(token)
+        decoded = decode_token(credentials.credentials)
     except TokenError as exc:
         raise UNAUTHORIZED from exc
 

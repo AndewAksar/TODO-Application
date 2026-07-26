@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import cast
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -25,7 +27,7 @@ class UserRepository:
 
         stmt = select(User).where(User.email == email)
         result = await self._session.execute(stmt)
-        return result.scalar_one_or_none()
+        return cast(User | None, result.scalar_one_or_none())
 
     async def get_by_id(self, user_id: int) -> User | None:
         if not isinstance(user_id, int):
@@ -33,7 +35,7 @@ class UserRepository:
 
         stmt = select(User).where(User.id == user_id)
         result = await self._session.execute(stmt)
-        return result.scalar_one_or_none()
+        return cast(User | None, result.scalar_one_or_none())
 
     async def create_user(
         self, email: str, password_hash: str, username: str | None = None
