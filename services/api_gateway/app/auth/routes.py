@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Annotated
+from typing import Annotated, cast
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -50,7 +50,7 @@ async def register(payload: RegisterRequest, session: SessionDependency) -> User
             detail="Service temporarily unavailable",
         ) from exc
 
-    return UserResponse.model_validate(user)
+    return cast(UserResponse, UserResponse.model_validate(user))
 
 
 @router.post(
@@ -88,4 +88,4 @@ async def login(payload: LoginRequest, session: SessionDependency) -> TokenRespo
 async def me(
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> UserResponse:
-    return UserResponse.model_validate(current_user)
+    return cast(UserResponse, UserResponse.model_validate(current_user))
