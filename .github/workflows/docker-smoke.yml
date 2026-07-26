@@ -81,8 +81,13 @@ jobs:
       - name: Observability check — unauthorized access
         run: |
           set -euo pipefail
-          code=$(curl -o /dev/null -s -w "%{http_code}" http://localhost:8008/me)
-          test "$code" = "401"
+          code=$(curl -o /dev/null -s -w "%{http_code}" http://localhost:8008/auth/me)
+          echo "GET /auth/me without token returned HTTP $code"
+
+          if [ "$code" != "401" ]; then
+            echo "Expected 401 Unauthorized, got $code"
+            exit 1
+          fi
 
       - name: Show compose ps
         if: always()
