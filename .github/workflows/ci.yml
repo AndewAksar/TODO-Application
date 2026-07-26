@@ -45,9 +45,18 @@ jobs:
             from pathlib import Path
 
             data = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))
-            reqs = data["project"]["optional-dependencies"]["dev"]
-            print("Installing dev dependencies from pyproject.toml:")
-            print("\n".join(reqs))
+            optional = data["project"]["optional-dependencies"]
+
+            groups = ("dev", "api", "test")
+            reqs = []
+            for group in groups:
+                reqs.extend(optional[group])
+
+            print("Installing dependencies from pyproject.toml:")
+            for group in groups:
+                print(f"\n[{group}]")
+                print("\n".join(optional[group]))
+
             subprocess.check_call(["python", "-m", "pip", "install", *reqs])
             PY
 
