@@ -12,6 +12,9 @@ jobs:
   checks:
     runs-on: ubuntu-latest
 
+    env:
+        PYTHONPATH: .
+
     strategy:
       fail-fast: false
       matrix:
