@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from services.api_gateway.app.api.deps import get_session
+from services.api_gateway.app.auth.dependencies import get_current_user
 from services.api_gateway.app.auth.schemas import (
     LoginRequest,
     RegisterRequest,
@@ -18,6 +19,7 @@ from services.api_gateway.app.auth.service import (
     EmailAlreadyRegisteredError,
     InvalidCredentialsError,
 )
+from services.api_gateway.app.models import User
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -76,3 +78,14 @@ async def login(payload: LoginRequest, session: SessionDependency) -> TokenRespo
         ) from exc
 
     return TokenResponse(access_token=access_token)
+
+
+@router.get(
+    "/me",
+    response_model=UserResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def me(
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> UserResponse:
+    return UserResponse.model_validate(current_user)

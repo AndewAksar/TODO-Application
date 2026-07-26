@@ -15,6 +15,9 @@ from services.api_gateway.app.auth.service import (
     InvalidCredentialsError,
 )
 from services.api_gateway.app.models import User
+from services.api_gateway.app.repositories.users import UserRepository
+from services.api_gateway.app.security.jwt import create_access_token
+from services.api_gateway.app.settings import settings
 
 pytestmark = [pytest.mark.unit, pytest.mark.contract]
 
@@ -22,6 +25,13 @@ pytestmark = [pytest.mark.unit, pytest.mark.contract]
 @pytest.fixture
 def session_stub() -> object:
     return object()
+
+
+@pytest.fixture
+def jwt_settings(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(settings, "JWT_SECRET_KEY", "test-secret-key", raising=True)
+    monkeypatch.setattr(settings, "JWT_ALGORITHM", "HS256", raising=True)
+    monkeypatch.setattr(settings, "JWT_EXPIRES_MINUTES", 15, raising=True)
 
 
 @pytest.fixture
@@ -213,3 +223,69 @@ def test_login_invalid_payload_returns_422(
     response = client.post("/auth/login", json={"email": "not-an-email", "password": "short"})
 
     assert response.status_code == 422
+
+
+def test_me_with_valid_token_returns_current_user(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+    jwt_settings: None,
+) -> None:
+    user = _make_user()
+
+    async def fake_get_by_id(self: UserRepository, user_id: int) -> User | None:
+        assert user_id == 123
+        return user
+
+    monkeypatch.setattr(UserRepository, "get_by_id", fake_get_by_id)
+
+    token = create_access_token(123)
+
+    response = client.get(
+        "/auth/me",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "id": 123,
+        "email": "user@example.com",
+        "username": None,
+        "created_at": "2026-01-02T03:04:05Z",
+    }
+    assert "password_hash" not in response.json()
+
+
+def test_me_without_token_returns_401(client: TestClient) -> None:
+    response = client.get("/auth/me")
+
+    assert response.status_code == 401
+    assert response.json() == {"detail": "Unauthorized"}
+
+
+def test_me_with_invalid_token_returns_401(client: TestClient) -> None:
+    response = client.get("/auth/me", headers={"Authorization": "Bearer not-a-jwt"})
+
+    assert response.status_code == 401
+    assert response.json() == {"detail": "Unauthorized"}
+
+
+def test_me_with_valid_token_for_missing_user_returns_401(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+    jwt_settings: None,
+) -> None:
+    async def fake_get_by_id(self: UserRepository, user_id: int) -> User | None:
+        assert user_id == 123
+        return None
+
+    monkeypatch.setattr(UserRepository, "get_by_id", fake_get_by_id)
+
+    token = create_access_token(123)
+
+    response = client.get(
+        "/auth/me",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert response.status_code == 401
+    assert response.json() == {"detail": "Unauthorized"}
