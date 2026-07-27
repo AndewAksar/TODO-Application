@@ -19,7 +19,13 @@ PROJECT_NAME := todo-kafka
 
 # Services (must match docker-compose.yml service names)
 API_SVC := api
+API_TOOLING_SVC := api-tooling
+TOOL := $(COMPOSE) --profile test run --rm $(API_TOOLING_SVC)
+PY := python
+PYTEST := $(PY) -m pytest
 SCHEDULER_SVC := scheduler
+RUFF := ruff
+MYPY := mypy
 MAILER_SVC := mailer
 FRONTEND_SVC := frontend
 DB_SVC := postgres
@@ -50,11 +56,17 @@ help:
 	@echo "    make shell-scheduler Open shell in Scheduler container"
 	@echo "    make shell-mailer    Open shell in Mailer container"
 	@echo ""
-	@echo "  Code Quality (runs inside API container by default):"
+	@echo "  Code Quality (runs inside docker test/tooling container):"
 	@echo "    make lint            Run ruff check"
 	@echo "    make format          Run ruff format"
 	@echo "    make typecheck       Run mypy (if configured)"
 	@echo "    make test            Run pytest"
+	@echo ""
+	@echo "  Local (runs in your .venv on host):"
+	@echo "    make test-local      Run pytest locally (requires DATABASE_URL)"
+	@echo "    make lint-local      Run ruff locally"
+	@echo "    make format-local    Run ruff format locally"
+	@echo "    make typecheck-local Run mypy locally"
 	@echo ""
 	@echo "  Database / Migrations:"
 	@echo "    make db-shell        Open psql shell"
@@ -117,36 +129,95 @@ shell-scheduler:
 shell-mailer:
 	$(COMPOSE) exec $(MAILER_SVC) /bin/sh
 
-# --- Quality (default inside API container)
+# --- Quality (runs inside docker test/tooling container)
 .PHONY: lint
 lint:
-	$(COMPOSE) exec $(API_SVC) ruff check .
+	$(TOOL) ruff check .
 
 .PHONY: format
 format:
-	$(COMPOSE) exec $(API_SVC) ruff format .
+	$(TOOL) ruff format .
 
 .PHONY: typecheck
 typecheck:
-	$(COMPOSE) exec $(API_SVC) mypy .
+	$(TOOL) mypy .
 
-.PHONY: test
+.PHONY: lint-local format-local typecheck-local
+lint-local:
+	@echo "Running LOCAL ruff (host venv)"
+	$(RUFF) check .
+
+format-local:
+	@echo "Running LOCAL format (host venv)"
+	$(RUFF) format .
+
+typecheck-local:
+	@echo "Running LOCAL mypy (host venv)"
+	$(MYPY) .
+
+.PHONY: test test-unit test-integration test-contract test-flaky
 test:
-	$(COMPOSE) exec $(API_SVC) pytest -q
+	$(TOOL) $(PYTEST) -m "not flaky"
+
+test-unit:
+	$(TOOL) $(PYTEST) -m "unit and not flaky"
+
+test-integration:
+	$(TOOL) $(PYTEST) -m "integration and not flaky"
+
+test-contract:
+	$(TOOL) $(PYTEST) -m "contract and not flaky"
+
+test-flaky:
+	$(TOOL) $(PYTEST) -m "flaky"
+
+# --- Local helpers
+.PHONY: check-local-env
+check-local-env:
+	@if [ -z "$$DATABASE_URL" ]; then \
+		echo ""; \
+		echo "ERROR: DATABASE_URL is required for local tests."; \
+		echo ""; \
+		echo "Example:"; \
+		echo "  DATABASE_URL='postgresql+asyncpg://x:x@localhost:5432/x' make test-local"; \
+		echo ""; \
+		exit 1; \
+	fi
+
+.PHONY: test-local test-local-unit test-local-integration test-local-contract
+test-local: check-local-env
+	@echo "Running LOCAL tests (host venv)"
+	$(PYTEST) -m "not flaky"
+
+test-local-unit: check-local-env
+	$(PYTEST) -m "unit and not flaky"
+
+test-local-integration: check-local-env
+	$(PYTEST) -m "integration and not flaky"
+
+test-local-contract: check-local-env
+	$(PYTEST) -m "contract and not flaky"
+
+.PHONY: check-local
+check-local: lint-local typecheck-local test-local
+
+.PHONY: test-docker
+test-docker:
+	$(TOOL) $(PYTEST) -m "not flaky"
 
 # --- DB helpers
 .PHONY: db-shell
 db-shell:
 	$(COMPOSE) exec $(DB_SVC) psql -U $$POSTGRES_USER -d $$POSTGRES_DB
 
-# --- Alembic (inside API container)
+# --- Alembic (inside tooling container)
 .PHONY: migrate
 migrate:
-	$(COMPOSE) exec $(API_SVC) alembic upgrade head
+	$(TOOL) alembic upgrade head
 
 # Example:
 #   make makemigration M="create users table"
 .PHONY: makemigration
 makemigration:
 	@if [ -z "$(M)" ]; then echo "ERROR: Provide message: make makemigration M=\"your message\""; exit 1; fi
-	$(COMPOSE) exec $(API_SVC) alembic revision -m "$(M)"
+	$(TOOL) alembic revision -m "$(M)"

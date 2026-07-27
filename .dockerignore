@@ -23,7 +23,7 @@ env/
 # ==================================================
 # Tests and coverage (not needed in runtime images)
 # ==================================================
-tests/
+!tests/
 .coverage
 .coverage.*
 htmlcov/

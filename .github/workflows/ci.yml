@@ -12,6 +12,9 @@ jobs:
   checks:
     runs-on: ubuntu-latest
 
+    env:
+        PYTHONPATH: .
+
     strategy:
       fail-fast: false
       matrix:
@@ -31,31 +34,89 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-          cache: "pip"
-          cache-dependency-path: |
-            ${{ matrix.service-path }}/pyproject.toml
-            ${{ matrix.service-path }}/requirements*.txt
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+            enable-cache: true
+            cache-dependency-glob: uv.lock
 
       - name: Install dependencies
-        run: |
-            python -m pip install --upgrade pip
-
-            python - <<'PY'
-            import tomllib, subprocess
-            from pathlib import Path
-
-            data = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))
-            reqs = data["project"]["optional-dependencies"]["dev"]
-            print("Installing dev dependencies from pyproject.toml:")
-            print("\n".join(reqs))
-            subprocess.check_call(["python", "-m", "pip", "install", *reqs])
-            PY
+        run: uv sync --frozen --extra dev --extra api --extra test
 
       - name: Ruff (lint)
-        run: ruff check .
+        run: uv run ruff check .
 
       - name: Ruff (format check)
-        run: ruff format --check .
+        run: uv run ruff format --check .
+
+      - name: Mypy (type check)
+        run: uv run mypy .
 
       - name: Pytest
-        run: pytest -q
+        run: uv run pytest -q
+
+  docker-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Docker tests (api-tooling)
+        run: |
+          docker compose --profile test run --rm api-tooling
+
+  migration-check:
+      runs-on: ubuntu-latest
+      timeout-minutes: 15
+      env:
+          COMPOSE_PROJECT_NAME: ci-migration-check
+
+      steps:
+          - name: Checkout
+            uses: actions/checkout@v4
+
+          - name: Set up Docker Buildx
+            uses: docker/setup-buildx-action@v3
+
+          - name: Ensure clean compose state
+            run: docker compose down -v --remove-orphans
+
+          - name: Start postgres on clean volume
+            run: docker compose up -d postgres
+
+          - name: Wait for postgres health
+            shell: bash
+            run: |
+                set -euo pipefail
+
+                cid="$(docker compose ps -q postgres)"
+                if [ -z "$cid" ]; then
+                    echo "postgres container not found"
+                    exit 1
+                fi
+
+                for i in $(seq 1 30); do
+                    status="$(docker inspect --format='{{if .State.Health}}{{.State.Health.Status}}{{else}}no-healthcheck{{end}}' "$cid")"
+                    if [ "$status" = "healthy" ]; then
+                        echo "postgres is healthy"
+                        exit 0
+                    fi
+                    echo "waiting for postgres health... current status: $status"
+                    sleep 2
+                done
+
+                echo "postgres did not become healthy in time"
+                docker compose ps
+                docker compose logs postgres
+                exit 1
+
+          - name: Apply Alembic migrations via tooling container
+            run: docker compose --profile test run --rm --no-deps api-tooling alembic upgrade head
+
+          - name: Down
+            if: always()
+            run: docker compose down -v --remove-orphans

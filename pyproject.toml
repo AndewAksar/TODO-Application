@@ -32,8 +32,10 @@ api = [
   "asyncpg>=0.29.0",
   "alembic>=1.13.1",
   "python-jose[cryptography]>=3.3.0",
-  "passlib[bcrypt]>=1.7.4",
+  "passlib>=1.7.4",
+  "bcrypt<4.1",
   "confluent-kafka>=2.5.0",
+  "email-validator>=2.3.0",
 ]
 
 # --- Scheduler service dependencies (APScheduler + DB read + Kafka producer)
@@ -53,6 +55,13 @@ mailer = [
   "jinja2>=3.1.4",
   "aiosmtplib>=3.0.1",
   "confluent-kafka>=2.5.0",
+]
+
+# --- Tests service dependencies
+test = [
+    "pytest",
+    "pytest-asyncio",
+    "httpx",
 ]
 
 [tool.ruff]
@@ -107,9 +116,16 @@ ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-q"
+addopts = "-q -ra --strict-markers"
 asyncio_mode = "auto"
 filterwarnings = [
   "error",
   "ignore::DeprecationWarning",
+]
+markers = [
+    "unit: fast isolated unit tests",
+    "integration: integration tests with external systems",
+    "contract: contract/schema validation tests",
+    "e2e: end-to-end critical path tests",
+    "flaky: unstable tests (temporary quarantine)",
 ]
