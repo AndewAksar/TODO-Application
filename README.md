@@ -19,22 +19,32 @@
 
 ---
 
-## Ключевые особенности (планируемые)
+## Текущее состояние
 
-- Асинхронный REST API (FastAPI)
-- Аутентификация на основе JWT
-- PostgreSQL как единый источник достоверной информации
-- Kafka для обработки событий предметной области и фоновой обработки
-- Микросервисы:
+Реализовано:
 
-- Сервис API
-
-- Сервис аутентификации
-- Сервис планировщика (логика, подобная cron)
-- Сервис рассылки почты (потребитель событий)
-- Локальная среда на основе Docker Compose
-- Набор тестов на основе pytest с покрытием кода
+- FastAPI application base
+- async PostgreSQL connection
+- Alembic migrations
+- JWT authentication flow
+- POST /auth/register
+- POST /auth/login
+- GET /auth/me
+- Docker Compose local environment
 - GitHub Actions CI
+- Docker smoke checks
+
+В разработке:
+
+- user-owned task CRUD
+
+Планируется:
+
+- Kafka domain events
+- Outbox pattern
+- Scheduler service
+- Mailer service
+- Static frontend
 
 ---
 
@@ -78,5 +88,14 @@ tests/ # Наборы тестов
 ## Подготовка локального окружения и список обязательных host-зависимостей
 
 Для локальной разработки требуется подготовленное host-окружение:
-- должны быть установлены `git`, `make`, `docker`, `docker compose`, `python3`, `python3-venv` и `pip`;
-- для Ubuntu / WSL базовая установка может быть выполнена командой `sudo apt update && sudo apt install -y git make python3 python3-venv python3-pip`, после чего необходимо отдельно убедиться, что Docker и `docker compose` доступны из shell, при необходимости создать виртуальное окружение через `python3 -m venv .venv`, установить project dependencies каноническим способом, принятым в репозитории, и проверить готовность среды запуском базовых команд проекта, например `make lint`, `make test` или другого актуального target из `Makefile`.
+
+- git
+- make
+- docker
+- docker compose
+- Python 3.12+
+- uv
+
+Зависимости устанавливаются через uv:
+
+`uv sync --extra dev --extra api --extra test`
