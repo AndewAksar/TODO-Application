@@ -23,9 +23,15 @@ Allowed areas:
 * `services/api_gateway/migrations/versions/`
 * `tests/unit/`
 * `tests/contract/`
+* `tests/integration/`
+* `tests/conftest.py` or `tests/integration/conftest.py` when shared integration fixtures are needed
+* `docker-compose.yml`
+* `Makefile`
+* `.env.example`
 * `infra/nginx/nginx.conf`
 * `README.md`
 * `docs/tasks/000-index.md`
+* `docs/tasks/060_user_owned_tasks_crud.md`
 
 Expected new API routes:
 
@@ -178,6 +184,15 @@ Expected responses:
 * Do not expose internal infrastructure exceptions through HTTP responses.
 * Do not expose another user's task existence.
 * Use Alembic for schema changes.
+* Integration tests must use real PostgreSQL through SQLAlchemy async + asyncpg; SQLite is not used as a substitute.
+* Integration tests run from the existing `api-tooling` test runner.
+* Provide a separate PostgreSQL test service and database: `postgres-test` / `todo_test`.
+* The normal runtime database `todo` and the integration-test database `todo_test` must be isolated from each other.
+* Unit and contract tests must remain independent of the database even though they run from the same `api-tooling` environment.
+* The `todo_test` schema must be prepared from the real Alembic migration chain (`alembic upgrade head`), not `Base.metadata.create_all()`.
+* Integration-test data must be explicitly cleaned between tests; prefer a simple deterministic cleanup strategy over nested transaction/savepoint machinery.
+* Cleanup code must refuse to run unless the configured database is clearly the dedicated test database.
+* Do not change existing task business logic merely to make integration tests pass. If integration tests reveal a production defect, report it explicitly before changing task implementation.
 * Keep the implementation compatible with existing CI jobs.
 
 ## Acceptance criteria
@@ -196,6 +211,11 @@ Expected responses:
 * done_at is cleared when a task is marked not done.
 * Contract tests cover protected route behavior.
 * Unit tests cover task service behavior.
+* A dedicated PostgreSQL test environment exists for integration tests.
+* Integration tests run against `postgres-test` / `todo_test`, not the normal `todo` database.
+* The test database schema is created by applying Alembic migrations to head.
+* Integration tests verify real persistence and user-ownership isolation across TaskService, TaskRepository, SQLAlchemy, asyncpg, and PostgreSQL.
+* Integration-test cleanup leaves tests independent and deterministic.
 * CI is green.
 
 ## Implementation plan
@@ -211,9 +231,15 @@ Expected responses:
 9. Update nginx config if /tasks is not proxied.
 10. Add unit tests for task service.
 11. Add contract tests for task HTTP routes.
-12. Run local verification commands.
-13. Run manual Swagger smoke test.
-14. Open PR and wait for CI.
+12. Extend the task test infrastructure with an isolated `postgres-test` service and `todo_test` database.
+13. Wire the existing `api-tooling` test runner to the isolated test database for database-backed test runs, while keeping unit and contract tests database-independent.
+14. Prepare the test schema through the real Alembic migration chain and add a safety guard preventing cleanup against a non-test database.
+15. Add simple deterministic integration fixtures for real AsyncSession access, test users, and explicit database cleanup between tests.
+16. Add PostgreSQL integration tests for task persistence and user-ownership isolation.
+17. Run focused unit, contract, and integration verification commands.
+18. Run full local verification commands.
+19. Run manual Swagger smoke test with two users.
+20. Open PR and wait for CI.
 
 ## Tests to add
 
@@ -240,19 +266,38 @@ Unit tests:
 * missing or foreign task raises TaskNotFoundError.
 * database errors become TaskInfrastructureError.
 
+Integration tests:
+
+* create_task persists a new task in PostgreSQL after commit.
+* list_tasks returns only rows owned by the requested user.
+* get_task returns an owned task from PostgreSQL.
+* get_task for another user's task raises TaskNotFoundError.
+* update_task persists ordinary field changes in PostgreSQL.
+* changing is_done from false to true persists is_done = true and a deterministic done_at.
+* changing is_done from true to false persists is_done = false and clears done_at to NULL.
+* updating another user's task raises TaskNotFoundError and leaves the stored row unchanged.
+* delete_task removes an owned task from PostgreSQL.
+* deleting another user's task raises TaskNotFoundError and leaves the stored row present.
+* Persistence assertions must re-read state from PostgreSQL where appropriate instead of trusting only an already-loaded ORM object.
+* Integration tests must not exercise HTTP, JWT, Nginx, Kafka, scheduler, or mailer behavior.
+
 ## Commands to run
 
 Required before PR:
 
 * `make lint`
 * `make typecheck`
+* `make test-unit`
+* `make test-contract`
+* `make test-integration`
 * `make test`
 
 Recommended before PR:
 
 * `docker compose up -d --build`
-* `make migrate`
-* `manual Swagger smoke through nginx`
+* apply Alembic migrations to the dedicated `todo_test` database
+* verify the test database is isolated from the normal `todo` database
+* `manual Swagger smoke through nginx` with two users
 
 ## Definition of Done
 
@@ -261,8 +306,12 @@ The final PR must include:
 * short summary of implemented task CRUD;
 * list of changed files;
 * tests added or updated;
+* dedicated PostgreSQL integration-test infrastructure (`postgres-test` / `todo_test`);
+* confirmation that Alembic migrations prepare the test schema;
+* confirmation that integration cleanup cannot target the normal development database;
 * commands executed and their results;
+* confirmation that unit, contract, and integration suites are green;
 * confirmation that CI is green;
-* confirmation that manual Swagger smoke was completed.
+* confirmation that manual Swagger smoke with two users was completed.
 
 The task is done only when the user can register, log in, get a JWT, and use that JWT to create, list, update, and delete only his own tasks.
