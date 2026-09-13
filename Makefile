@@ -21,6 +21,8 @@ PROJECT_NAME := todo-kafka
 API_SVC := api
 API_TOOLING_SVC := api-tooling
 TOOL := $(COMPOSE) --profile test run --rm $(API_TOOLING_SVC)
+TEST_DATABASE_URL := postgresql+asyncpg://todo_test:todo_test@postgres-test:5432/todo_test
+TEST_TOOL := $(COMPOSE) --profile test run --rm --no-deps -e DATABASE_URL=$(TEST_DATABASE_URL) $(API_TOOLING_SVC)
 PY := python
 PYTEST := $(PY) -m pytest
 SCHEDULER_SVC := scheduler
@@ -71,6 +73,8 @@ help:
 	@echo "  Database / Migrations:"
 	@echo "    make db-shell        Open psql shell"
 	@echo "    make migrate         Apply Alembic migrations to head"
+	@echo "    make test-db-up      Start isolated test PostgreSQL and wait for health"
+	@echo "    make test-db-migrate Apply Alembic migrations to isolated test DB"
 	@echo "    make makemigration M=\"msg\"  Create new Alembic revision"
 	@echo ""
 	@echo "Tips:"
@@ -156,20 +160,20 @@ typecheck-local:
 	$(MYPY) .
 
 .PHONY: test test-unit test-integration test-contract test-flaky
-test:
-	$(TOOL) $(PYTEST) -m "not flaky"
+test: test-db-migrate
+	$(TEST_TOOL) $(PYTEST) -m "not flaky"
 
 test-unit:
-	$(TOOL) $(PYTEST) -m "unit and not flaky"
+	$(TEST_TOOL) $(PYTEST) -m "unit and not flaky"
 
-test-integration:
-	$(TOOL) $(PYTEST) -m "integration and not flaky"
+test-integration: test-db-migrate
+	$(TEST_TOOL) $(PYTEST) -m "integration and not flaky"
 
 test-contract:
-	$(TOOL) $(PYTEST) -m "contract and not flaky"
+	$(TEST_TOOL) $(PYTEST) -m "contract and not flaky"
 
 test-flaky:
-	$(TOOL) $(PYTEST) -m "flaky"
+	$(TEST_TOOL) $(PYTEST) -m "flaky"
 
 # --- Local helpers
 .PHONY: check-local-env
@@ -202,13 +206,20 @@ test-local-contract: check-local-env
 check-local: lint-local typecheck-local test-local
 
 .PHONY: test-docker
-test-docker:
-	$(TOOL) $(PYTEST) -m "not flaky"
+test-docker: test-db-migrate
+	$(TEST_TOOL) $(PYTEST) -m "not flaky"
 
 # --- DB helpers
 .PHONY: db-shell
 db-shell:
 	$(COMPOSE) exec $(DB_SVC) psql -U $$POSTGRES_USER -d $$POSTGRES_DB
+
+.PHONY: test-db-up test-db-migrate
+test-db-up:
+	$(COMPOSE) --profile test up -d --wait postgres-test
+
+test-db-migrate: test-db-up
+	$(TEST_TOOL) alembic upgrade head
 
 # --- Alembic (inside tooling container)
 .PHONY: migrate

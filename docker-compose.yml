@@ -161,6 +161,7 @@ services:
             ALEMBIC_CONFIG: /app/services/api_gateway/alembic.ini
         volumes:
             - ./services/api_gateway:/app/services/api_gateway
+            - ./tests:/app/tests
         depends_on:
             postgres:
                 condition: service_healthy
