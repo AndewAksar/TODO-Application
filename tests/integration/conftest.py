@@ -8,7 +8,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine, async_sessionmaker, create_async_engine
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture
 async def integration_engine() -> AsyncIterator[AsyncEngine]:
     database_url = settings.DATABASE_URL
     if not database_url:
@@ -21,7 +21,7 @@ async def integration_engine() -> AsyncIterator[AsyncEngine]:
         await engine.dispose()
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture
 def integration_session_factory(
     integration_engine: AsyncEngine,
 ) -> async_sessionmaker:
