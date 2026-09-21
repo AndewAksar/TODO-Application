@@ -1,143 +1,58 @@
-# CONTRACT TEST PLAYBOOK
+# Contract Test Playbook
 
-## Назначение
-Этот документ описывает порядок создания и поддержки контрактных тестов.
+## Status: Current
 
-Контрактный тест проверяет, что публичный интерфейс/формат данных
-соответствует зафиксированному контракту и остаётся совместимым во времени.
+Contract tests protect observable interfaces without requiring a real database
+or broker. The repository has two contract categories with different sources
+of truth.
 
-Контракты в репозитории включают:
-- схемы событий (JSON Schema),
-- правила топиков/каталога событий,
-- публичные DTO/форматы обмена,
-- (опционально) OpenAPI для HTTP.
+## Implemented HTTP adapter contracts
 
----
+Current tests under `tests/contract/` exercise FastAPI routing, dependencies,
+Pydantic validation, request/response behavior, status codes, and translation
+of service errors. They use `TestClient`, override auth/session dependencies,
+and replace service persistence calls where appropriate.
 
-## 1. Когда контрактный тест обязателен
+These tests answer questions such as:
 
-Контрактный тест обязателен, если:
+- does a protected route reject missing credentials;
+- does the route pass `current_user.id` rather than client ownership;
+- do schemas reject forbidden/invalid fields;
+- are not-found and infrastructure errors mapped to the documented HTTP status;
+- does delete return an empty `204` response.
 
-- добавляется новое событие/сообщение;
-- меняется схема события;
-- меняется формат публичного DTO;
-- добавляется/меняется публичный HTTP endpoint (если выбран OpenAPI как контракт);
-- меняются правила совместимости/версионирования;
-- фиксится баг, связанный с некорректным форматом данных.
+FastAPI OpenAPI is the formal machine-readable HTTP contract. Human semantic
+rules for tasks are documented in `docs/api/tasks.md`.
 
-Если данные выходят за пределы модуля/сервиса — это контракт.
+## Planned event/schema contracts
 
----
+**Status: Planned.** Task 070 is expected to establish machine-readable event
+schemas and their positive/negative validation tests. The proposed
+human-readable material is under `docs/contracts/events/`; target JSON Schema
+paths under `services/shared/schemas/events/` do not exist yet.
 
-## 2. Границы контрактного теста
+When event schemas are implemented, tests should validate required fields,
+types, valid examples, rejection cases, and compatibility/versioning rules.
+They should not pretend that a producer or consumer exists merely because a
+proposed document exists.
 
-Контрактный тест:
+## Boundaries
 
-- НЕ тестирует бизнес-логику (это unit/integration);
-- НЕ требует реальной БД/брокера (если проверяется только формат);
-- проверяет формат/схему/совместимость.
+A contract test:
 
-Контрактный тест отвечает на вопрос:
-"Это сообщение/DTO допустимо по правилам, и не ломает потребителей?"
+- does not use real PostgreSQL or Kafka when validating only the adapter/schema;
+- does not replace unit tests for service business logic;
+- does not replace integration tests for real persistence;
+- verifies stable behavior at a module/service boundary.
 
----
+Not every contract must be a standalone external schema artifact: implemented
+HTTP contracts are also defined by FastAPI/Pydantic/OpenAPI. Event contracts,
+when implemented, require checked-in schemas because they cross asynchronous
+producer/consumer boundaries.
 
-## 3. Источник истины (где живут контракты)
+## Running
 
-Контракт всегда хранится как артефакт репозитория (не в коде).
-
-Примеры:
-- `docs/contracts/...` (каталог, правила, топики)
-- `services/shared/schemas/events/*.schema.json` (JSON Schema)
-
-Код подчиняется контракту, не наоборот.
-
----
-
-## 4. Алгоритм добавления нового события (или нового контракта)
-
-### Шаг 1 — Зафиксировать контракт
-- создать/обновить схему (JSON Schema) в общем каталоге схем;
-- добавить событие в каталог событий;
-- определить topic/ключ/версию (если используется).
-
-Запрещено:
-- "сначала отправим как-нибудь, потом опишем".
-
----
-
-### Шаг 2 — Добавить позитивный контрактный тест
-Тест должен подтверждать:
-- валидный payload проходит валидацию по схеме;
-- обязательные поля присутствуют;
-- типы соответствуют.
-
-Минимум: 1 валидный пример payload на каждую схему.
-
----
-
-### Шаг 3 — Добавить негативные тесты
-Тесты должны ломать контракт намеренно:
-- отсутствие обязательного поля;
-- неправильный тип;
-- лишнее поле (если контракт запрещает);
-- нарушение формата (uuid/email/date и т.п. если определено).
-
-Цель: доказать, что схема реально защищает формат.
-
----
-
-### Шаг 4 — Если контракт меняется: классифицировать изменение
-Перед изменением схемы определить:
-
-- **Non-breaking** (совместимо):
-  - добавили необязательное поле;
-  - расширили enum (если потребители готовы);
-  - ослабили ограничения (осторожно).
-
-- **Breaking** (ломает):
-  - удалили поле;
-  - сделали optional → required;
-  - изменили тип;
-  - сузили enum;
-  - изменили смысл поля без версии.
-
-Если изменение breaking — обязателен механизм версии (см. правила контрактов).
-Без версии breaking запрещён.
-
----
-
-## 5. Требования к контрактным примерам (payload samples)
-
-Каждая схема должна иметь:
-- минимум 1 валидный пример payload (эталон);
-- примеры должны быть стабильными и осмысленными (не "foo/bar").
-
-Пример — часть контракта.
-Если пример нечитабельный — контракт нечитабельный.
-
----
-
-## 6. Criteria of Done
-
-Контракт считается корректно защищённым, если:
-
-- схема зафиксирована как файл контракта;
-- есть позитивный тест на валидный payload;
-- есть негативные тесты на нарушения;
-- при изменении контракта явно определена совместимость;
-- breaking-изменения сопровождаются версионированием/переходным планом;
-- контрактные тесты запускаются в CI отдельной категорией.
-
----
-
-## 7. Анти-паттерны (жёсткие запреты)
-
-- менять формат данных без обновления схемы;
-- хранить “контракт” только в коде/комментариях;
-- добавлять событие без схемы и каталога;
-- делать breaking-изменение без версии;
-- “временно отключить” контрактные тесты ради мержа;
-- покрывать схему только happy-path без негативных кейсов.
-
-Контрактные тесты — это защита границ системы.
+```bash
+make test-contract
+```
+The suite must remain deterministic and database-independent.

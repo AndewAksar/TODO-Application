@@ -1,5 +1,49 @@
 # Task 060 — User-owned tasks CRUD
 
+## Status: Completed
+
+This file preserves the original implementation brief below. Current API
+semantics live in `docs/api/tasks.md`; current architecture lives in
+`docs/architecture/`.
+
+## Completion record
+
+Task 060 delivered the protected endpoint set originally requested:
+
+* `POST /tasks`
+* `GET /tasks`
+* `GET /tasks/{task_id}`
+* `PATCH /tasks/{task_id}`
+* `DELETE /tasks/{task_id}`
+
+The implemented flow is `get_current_user` → `current_user.id` → `TaskService`
+→ owner-scoped `TaskRepository`. Client request schemas do not accept
+`user_id`; missing and foreign tasks share the same not-found behavior.
+
+The implementation consists of the existing Task ORM mapping and Alembic CRUD
+migration, Pydantic task schemas, repository, service, FastAPI routes/router
+registration, and Nginx forwarding. Services own commit/rollback boundaries;
+repositories perform SQLAlchemy persistence operations without committing.
+
+Completion transitions are:
+
+| Previous | Requested | Result |
+|---|---|---|
+| `false` | `true` | `done_at` becomes the injected clock value |
+| `true` | `false` | `done_at` becomes `null` |
+| `true` | `true` | existing `done_at` is preserved |
+| `false` | `false` | `done_at` remains unchanged (normally `null`) |
+
+Completed verification coverage includes schema and service unit tests, HTTP
+route contract tests, and PostgreSQL integration tests. The integration layer
+uses `api-tooling`, `postgres-test`, database/user `todo_test`, Alembic to head,
+guarded cleanup before/after each test, a function-scoped async engine,
+multiple fresh sessions, and an injected deterministic clock.
+
+Repository history records the focused Task 060 test and infrastructure
+commits. This completion record does not claim that the currently configured CI
+already has the planned dedicated PostgreSQL integration-test job.
+
 ## Goal
 
 Add the first real business feature of the project: CRUD operations for tasks owned by the currently authenticated user.

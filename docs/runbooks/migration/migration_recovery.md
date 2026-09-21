@@ -129,7 +129,7 @@ alembic upgrade head
 alembic current
 ```
 
-Если ревизия отсутствует в `migrations/versions`, цепочка нарушена.
+Если ревизия отсутствует в `services/api_gateway/migrations/versions/`, цепочка нарушена.
 
 Решение:
 

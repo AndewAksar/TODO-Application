@@ -1,40 +1,48 @@
-# Data & Event Model
+# Data and Event Model
 
-## Source of truth
-- PostgreSQL is the system of record for all persistent state.
-- Kafka is used for event propagation and async workflows (not for storing business state).
+## Current database model
 
-## Identifiers
-- Prefer UUIDs for `user_id`, `task_id`, `event_id` (consistent across services).
+PostgreSQL is the system of record. The current API uses SQLAlchemy 2.0 async,
+asyncpg, `create_async_engine`, and `async_sessionmaker(...,
+expire_on_commit=False)`. Alembic revisions under
+`services/api_gateway/migrations/versions/` are the schema-evolution record.
 
-## Kafka topics
-- Main topic: `events`
-- Multiple event types share the same topic → every event must include:
-  - `type` (discriminator)
-  - `event_id` (idempotency key)
-  - `occurred_at` (ISO8601 datetime)
+Accepted ADR 0004 defines integer entity identifiers:
 
-Details: `docs/contracts/events/topics.md`
+- `User.id`: integer primary key;
+- `Task.id`: integer primary key;
+- `Task.user_id`: integer foreign key to `users.id` with `ON DELETE CASCADE`.
 
-## Event contracts
-- Human-readable contracts: `docs/contracts/events/*`
-- Machine-readable schemas: `services/shared/schemas/events/*`
+`User.tasks` and `Task.user` form a bidirectional ORM relationship. The user
+side uses `all, delete-orphan` cascade.
 
-### Delivery semantics
-- at-least-once → duplicates are possible
-- consumers must be idempotent
+Current Task fields are:
 
-### Idempotency
-Mailer must persist processed event ids (e.g., `processed_events(event_id, processed_at)`) and skip duplicates.
+- `id`, `user_id`;
+- `title` (required, up to 255 characters);
+- nullable `description`;
+- `is_done` (required, default false);
+- nullable `done_at` and `due_at` timezone-aware timestamps;
+- `created_at` and `updated_at` timezone-aware timestamps.
 
-## Domain events (initial set)
-- `task.created`
-- `task.completed`
-- `email.daily_digest.requested`
+The current task index is `ix_tasks_user_id` on `user_id`. The earlier
+`(user_id, done)` index was deliberately removed when `done` became `is_done`.
 
-Catalog: `docs/contracts/events/event-catalog.md`
+## Transactions and ownership
+Repositories issue queries and `flush`/`refresh`/`delete` operations. Services
+own write transaction completion: successful create/update/delete operations
+commit and SQLAlchemy failures roll back. Read methods do not commit. All
+individual-task repository lookups include both task ID and owner ID.
 
-## Schema evolution rules (compatibility)
-- Prefer backward-compatible changes (add optional fields).
-- Breaking changes require a new version / type and explicit documentation updates.
-Rules: `docs/contracts/events/rules.md`
+## Planned event model
+
+**Status: Planned.** Task-domain Kafka publishing, outbox delivery, scheduler
+production, mailer consumption, and machine-readable event schemas are not yet
+implemented.
+
+The proposed event design uses UUID `event_id` values as idempotency keys. This
+does not change the accepted integer strategy for User and Task entity IDs.
+The intended human-readable contracts are under `docs/contracts/events/`.
+Their target machine-readable location is
+`services/shared/schemas/events/`, which does not exist yet and is expected to
+be addressed by Task 070.

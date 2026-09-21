@@ -1,19 +1,36 @@
-# Services & Responsibilities
+# Services and Responsibilities
 
-This document describes service boundaries, responsibilities, and interactions.
+## Status: Current
 
-## Service inventory
+## Implemented runtime components
 
-| Service | Path                         | Responsibility | Owns data | Produces events | Consumes events |
-|--------|------------------------------|----------------|----------|-----------------|----------------|
-| TODO API | `services/todo_service`      | CRUD tasks, mark done, main REST API | tasks | `task.created`, `task.completed` | (optional future) |
-| Auth | `services/auth_service`      | register/login, JWT issuing | users | `user.registered` (future) | (optional future) |
-| Scheduler | `services/scheduler_service` | daily job at 00:00; builds digest payload | (none or digest-related tables) | `email.daily_digest.requested` | (optional future) |
-| Mailer | `services/mailer_service`    | send emails; idempotent consumers | `processed_events` | (optional: email.sent) | `email.daily_digest.requested` |
-| API Gateway (optional) | `services/api_gateway`       | reverse proxy / BFF; serve SPA; route APIs | none | none | none |
-| Shared | `services/shared`            | shared schemas, common types/utils | n/a | n/a | n/a |
+| Component | Path | Current responsibility |
+|---|---|---|
+| API gateway | `services/api_gateway` | One deployable FastAPI backend containing auth, task CRUD, repositories, models, DB access, and migrations |
+| Auth module | `services/api_gateway/app/auth` | Register/login, JWT issuance, and authenticated-user dependency |
+| Tasks module | `services/api_gateway/app/tasks` | Human-facing task schemas/routes and task business rules |
+| Repositories | `services/api_gateway/app/repositories` | Async SQLAlchemy access for users and owner-scoped tasks |
+| Nginx | `infra/nginx/nginx.conf` | Static placeholder serving and reverse proxy for current API routes |
+| PostgreSQL | Compose service `postgres` | Persistent source of truth |
+| Tooling | Compose service `api-tooling` | Tests, lint, typecheck, and Alembic operations; not a runtime service |
+| Test PostgreSQL | Compose service `postgres-test` | Isolated `todo_test` database for integration tests |
 
-## Notes on boundaries
-- `services/shared` and `docs/contracts/*` are **protected core** and should not be modified unless required and justified (see `AGENTS.md`).
-- "Owns data" means the service is responsible for the schema/migrations and rules for those tables.
-- In a training monorepo, multiple services may connect to the same PostgreSQL instance; ownership is still a conceptual boundary.
+The API service owns the current `users`, `tasks`, and `processed_events` ORM
+mappings and the Alembic migration chain. The presence of `processed_events`
+does not by itself mean that an event consumer is operational.
+
+## Present but not operational product workflows
+
+| Component | Path | Current status |
+|---|---|---|
+| Scheduler | `services/scheduler_service` | Container/service skeleton; planned daily-digest behavior is not implemented |
+| Mailer | `services/mailer_service` | Container/service skeleton; Kafka consumption and email delivery are not implemented |
+| Kafka/Zookeeper | `docker-compose.yml` | Available infrastructure for later tasks; task CRUD does not publish events |
+| Frontend | `frontend/` | Static placeholder, not a completed application |
+
+## Planned service evolution
+
+Kafka producers/consumers, background workers, scheduler, mailer, or other
+components may become separate deployable services when their behavior is
+implemented and independent deployment has a concrete benefit. They must not
+be described as current runtime boundaries before then.

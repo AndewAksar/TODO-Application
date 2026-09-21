@@ -1,5 +1,10 @@
 # Runbook: JWT debugging
 
+## Status: Current and canonical
+
+This is the canonical JWT debugging procedure. The protected current-user path
+is `/auth/me`.
+
 ## 1. Назначение
 
 Этот документ описывает **пошаговую диагностику проблем JWT/auth** в `services/api_gateway`.
@@ -65,9 +70,9 @@
 
 ---
 
-## 5. Диагностика protected endpoint (`/me`)
+## 5. Диагностика protected endpoint (`/auth/me`)
 
-### 5.1. Если `/me` возвращает `401`
+### 5.1. Если `/auth/me` возвращает `401`
 Проверять по порядку:
 
 1. Есть ли header `Authorization`.

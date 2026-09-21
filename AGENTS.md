@@ -135,6 +135,26 @@ Commit, push, создание/обновление PR и merge разрешен
 - или явно сказать, что выполнение невозможно в среде агента,
   и перечислить команды, которые должны быть запущены локально/в CI.
 
+### Documentation impact review
+
+Для каждой implementation-задачи обязателен следующий порядок:
+
+`implementation -> verification -> documentation impact review -> documentation update if required -> task complete`
+
+Implementation-задача не завершена, пока не выполнено одно из условий:
+
+- затронутая документация обновлена;
+- итоговый отчёт явно содержит `Documentation changes required: none`.
+
+Definition of Done каждого будущего implementation Task Brief обязан включать:
+
+- `Documentation impact reviewed: required.`
+- `Affected documentation updated: required when applicable.`
+
+При review необходимо рассмотреть по применимости `README.md`, архитектуру,
+task history, API/contracts, runbooks, testing, roadmap, ADR и CI-документацию.
+Известный drift нельзя откладывать на неопределённую будущую уборку.
+
 ---
 
 ## 7) Формат результата (обязательный отчёт)
