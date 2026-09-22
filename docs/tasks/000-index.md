@@ -1,17 +1,36 @@
 # Task Index
 
-This folder contains the step-by-step development plan for the project.
+Task files are historical implementation records and future work briefs. They
+do not replace current architecture, API documentation, or accepted ADRs.
 
-## Rules
-- Follow tasks in order unless a task explicitly says otherwise.
-- Each task is small and incremental.
-- Do not expand scope beyond what the task allows.
-- Protected core rules are enforced via `AGENTS.md`.
+## Completed
 
-## Current sequence (early stage)
-- 010 — Shared event models (`docs/tasks/010-shared-events.md`)
+- 050 — [JWT authentication](050_auth_jwt.md)
+- 060 — [User-owned Tasks CRUD](060_user_owned_tasks_crud.md)
+  - all five protected task routes;
+  - owner-scoped service/repository behavior;
+  - unit and HTTP contract tests;
+  - real PostgreSQL integration-test layer.
 
-## Next tasks (planned)
-- 020 — TODO service skeleton (FastAPI app scaffold, no DB logic yet)
-- 030 — Auth service skeleton (JWT issuing scaffold)
-- 040 — Local Kafka + Postgres infra (docker-compose)
+## Next planned task
+
+- 070 — [Domain event contracts](070_domain_event_contracts.md) (`Status: Planned`)
+
+## Reserved future task files
+
+The following files are empty reservations and are not implemented features:
+
+- 080 — API Kafka producer
+- 090 — API outbox pattern
+- 100 — Scheduler daily digest flow
+- 110 — Mailer Kafka consumer
+- 120 — Mailer idempotency
+- 130 — Static frontend
+- 140 — Final testing and documentation
+
+## Task rules
+
+- Public HTTP behavior requires contract coverage.
+- Schema changes use Alembic.
+- Follow `AGENTS.md` and the task's explicit writable/non-scope boundaries.
+- Completed implementation work must include documentation-impact review.

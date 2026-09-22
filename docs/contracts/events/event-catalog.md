@@ -1,5 +1,11 @@
 # Event Catalog
 
+## Status: Planned
+
+The following entries are proposed contracts. Their referenced JSON Schema
+files are target paths and do not exist yet. No entry in this catalog should be
+read as evidence that its producer or consumer is operational.
+
 This catalog defines the meaning and usage of each event.
 
 ---
@@ -16,7 +22,7 @@ A new task was created for a user.
 - (optional now) Mailer / Analytics (future)
 
 ### Payload (contract)
-See schema: `services/shared/schemas/events/task.created.schema.json`
+Target schema: `services/shared/schemas/events/task.created.schema.json` (planned)
 
 ### When emitted
 After the task is committed to the database (PostgreSQL is source of truth).
@@ -35,7 +41,7 @@ A task was marked as done.
 - (optional) Analytics (future)
 
 ### Payload (contract)
-See schema: `services/shared/schemas/events/task.completed.schema.json`
+Target schema: `services/shared/schemas/events/task.completed.schema.json` (planned)
 
 ### When emitted
 After DB commit.
@@ -54,7 +60,7 @@ A daily email digest should be sent to the user (integration event).
 - Mailer service (sends an email)
 
 ### Payload (contract)
-See schema: `services/shared/schemas/events/email.daily_digest.requested.schema.json`
+Target schema: `services/shared/schemas/events/email.daily_digest.requested.schema.json` (planned)
 
 ### Processing rules
 - MUST be handled idempotently using event_id

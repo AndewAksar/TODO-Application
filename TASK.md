@@ -1,5 +1,16 @@
 # Техническое задание
 
+## Статус документа
+
+Это исходная продуктовая спецификация и описание целевого направления. Она не
+является источником истины для текущего runtime. Текущая архитектура описана в
+`docs/architecture/`, HTTP-контракт — в FastAPI OpenAPI, а принятые решения — в
+`docs/adr/`.
+
+На текущем этапе реализованы JWT-аутентификация и синхронный user-owned Tasks
+CRUD внутри единого `services/api_gateway`. Kafka publishing, outbox,
+операционные scheduler/mailer flows и frontend остаются целевыми этапами.
+
 ## Event-Driven TODO Application (Python / FastAPI / Kafka)
 
 ### 1. Цель проекта
@@ -79,23 +90,30 @@ Kafka Broker  ─────────→  Mailer Service  ─→ SMTP (Mailj
 - GitHub Actions (CI)
 
 ### 5. Доменные сущности (Data Model)
-**User**
-- `id`: UUID
+**User (текущая модель; ADR 0004)**
+- `id`: integer
 - `email`: str (unique)
+- `username`: str | null (unique)
 - `password_hash`: str
 - `created_at`: datetime
 
-**Task**
-- `id`: UUID
-- `user_id`: UUID (FK)
+**Task (текущая модель; ADR 0004)**
+- `id`: integer
+- `user_id`: integer (FK)
 - `title`: str
-- `done`: bool
+- `description`: str | null
+- `is_done`: bool
 - `created_at`: datetime
 - `done_at`: datetime | null
+- `due_at`: datetime | null
+- `updated_at`: datetime
+
 
 **Индексы:**
 - `(user_id)`
-- `(user_id, done)`
+
+Идентификаторы будущих событий могут оставаться UUID; это не меняет integer
+primary-key strategy доменных сущностей.
 
 ### 6. Аутентификация и авторизация
 **JWT**
@@ -129,10 +147,15 @@ Kafka Broker  ─────────→  Mailer Service  ─→ SMTP (Mailj
 |------:|----------------|----------------------------|
 | GET   | `/tasks`        | Список задач пользователя |
 | POST  | `/tasks`        | Создание задачи           |
+| GET   | `/tasks/{id}`   | Получение задачи          |
 | PATCH | `/tasks/{id}`   | Обновление (done/title)   |
 | DELETE| `/tasks/{id}`   | Удаление                  |
 
-### 8. Доменные события (Kafka)
+### 8. Планируемые доменные события (Kafka)
+
+**Status: Planned.** Следующие контракты описывают целевое направление; текущий
+Tasks CRUD не публикует события.
+
 **Общие правила**
 - Все события immutable.
 - Содержат `event_id` (UUID).
@@ -146,8 +169,8 @@ Kafka Broker  ─────────→  Mailer Service  ─→ SMTP (Mailj
   "event_id": "uuid",
   "type": "task.created",
   "occurred_at": "ISO8601",
-  "user_id": "uuid",
-  "task_id": "uuid",
+  "user_id": 123,
+  "task_id": 456,
   "title": "string"
 }
 ```
@@ -158,8 +181,8 @@ Kafka Broker  ─────────→  Mailer Service  ─→ SMTP (Mailj
   "event_id": "uuid",
   "type": "task.completed",
   "occurred_at": "ISO8601",
-  "user_id": "uuid",
-  "task_id": "uuid"
+  "user_id": 123,
+  "task_id": 456
 }
 ```
 
@@ -169,7 +192,7 @@ Kafka Broker  ─────────→  Mailer Service  ─→ SMTP (Mailj
   "event_id": "uuid",
   "type": "email.daily_digest.requested",
   "occurred_at": "ISO8601",
-  "user_id": "uuid",
+  "user_id": 123,
   "email": "string",
   "stats": {
     "total": int,

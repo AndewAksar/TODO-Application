@@ -1,82 +1,117 @@
-# Приложение TODO
+# TODO Application
 
-Приложение TODO, управляемое событиями, созданное с использованием асинхронного стека Python.
-Это **учебный проект в производственном стиле**, предназначенный для изучения современных бэкенд-технологий и архитектурных шаблонов, при этом код должен быть понятным и доступным.
-
-Проект предназначен для **портфолио начинающего/среднего уровня бэкенд-разработчика**.
-
-## Цели проекта
-
-- Практика **FastAPI + Pydantic v2** в реалистичном REST API
-- Использование **SQLAlchemy 2.0 (асинхронный)** с **миграциями Alembic**
-- Понимание **событийно-ориентированной архитектуры** с **Kafka**
-- Создание системы, состоящей из **нескольких сервисов**
-- Применение **Docker Compose** для локальной разработки
-- Настройка **контролей качества CI** (линтинг, типизация, тесты, покрытие кода)
-- Сохранение кода **простым, понятным и читаемым**
-
-В этом репозитории приоритет отдается **ясности, а не излишней изобретательности**.
+Учебное TODO-приложение в production-style: асинхронный Python API, PostgreSQL,
+контейнерное окружение и проверяемые границы между HTTP, бизнес-логикой и
+доступом к данным.
 
 ---
 
-## Ключевые особенности (планируемые)
+## Текущее состояние
 
-- Асинхронный REST API (FastAPI)
-- Аутентификация на основе JWT
-- PostgreSQL как единый источник достоверной информации
-- Kafka для обработки событий предметной области и фоновой обработки
-- Микросервисы:
+Реализовано:
 
-- Сервис API
+- единый FastAPI-сервис `services/api_gateway`;
+- JWT-аутентификация: `POST /auth/register`, `POST /auth/login`, `GET /auth/me`;
+- повторная проверка пользователя из JWT по PostgreSQL;
+- защищённый user-owned Tasks CRUD: `POST/GET /tasks` и
+  `GET/PATCH/DELETE /tasks/{task_id}`;
+- PostgreSQL, SQLAlchemy 2.0 async, asyncpg и Alembic;
+- unit-, HTTP contract- и реальные PostgreSQL integration-тесты;
+- Docker Compose окружение, отдельная тестовая БД и tooling-контейнер;
+- GitHub Actions для текущих code checks, Docker checks и проверки миграций.
 
-- Сервис аутентификации
-- Сервис планировщика (логика, подобная cron)
-- Сервис рассылки почты (потребитель событий)
-- Локальная среда на основе Docker Compose
-- Набор тестов на основе pytest с покрытием кода
-- GitHub Actions CI
+Kafka, task-domain events, outbox, рабочие scheduler/mailer flows и полноценный
+frontend **запланированы**, но ещё не являются реализованным поведением продукта.
+Наличие Kafka, scheduler и mailer контейнеров не означает, что Tasks CRUD уже
+работает событийно.
 
----
+## Текущая архитектура
 
-## Архитектура высокого уровня
-
-Система использует **событийно-ориентированную архитектуру**:
-
-- Сервисы API записывают изменения состояния в PostgreSQL
-- Значительные изменения состояния генерируют события предметной области в Kafka
-- Фоновые сервисы реагируют на события асинхронно
-- Сервисы по умолчанию не вызывают друг друга напрямую
-
-Kafka обеспечивает **доставку как минимум один раз**, поэтому ожидается, что потребители будут идемпотентными.
-
-Более подробная информация:
-- Обзор архитектуры: `docs/architecture/`
-- Контракты событий: `docs/contracts/events/`
-- Контракты REST: `docs/contracts/rest/`
-
----
-
-## Структура репозитория
+Планируется:
 
 ```text
-services/ # Сервисы бэкэнда (API, аутентификация, планировщик, отправка почты, общие ресурсы)
-infra/ # Конфигурация Docker, Kafka, Nginx
-docs/ # Архитектура, контракты, ADR, руководства по запуску
-tests/ # Наборы тестов
-.github/ # Рабочие процессы CI, шаблоны
+client / Swagger
+       |
+       v
+Nginx -> services/api_gateway
+         ├── auth
+         ├── tasks
+         ├── repositories
+         ├── models.py
+         ├── db.py
+         └── Alembic migrations
+                    |
+                    v
+               PostgreSQL
 ```
-## Индекс документации
 
-- Архитектура: `docs/architecture/`
-- Контракты REST и событий: `docs/contracts/` (планируется REST)
-- Задачи (пошаговая разработка): `docs/tasks/000-index.md`
-- Архитектурные решения: `docs/adr/`
-- Операционные Примечания: `docs/runbooks/`
-- Дорожная карта проекта: `ROADMAP.md`
-- Спецификация проекта: `TASK.md`
+Backend намеренно не разделён на отдельные auth/todo микросервисы. Возможная
+дальнейшая декомпозиция относится к будущей архитектуре и должна иметь
+конкретную эксплуатационную причину.
 
-## Подготовка локального окружения и список обязательных host-зависимостей
+## Стек
 
-Для локальной разработки требуется подготовленное host-окружение:
-- должны быть установлены `git`, `make`, `docker`, `docker compose`, `python3`, `python3-venv` и `pip`;
-- для Ubuntu / WSL базовая установка может быть выполнена командой `sudo apt update && sudo apt install -y git make python3 python3-venv python3-pip`, после чего необходимо отдельно убедиться, что Docker и `docker compose` доступны из shell, при необходимости создать виртуальное окружение через `python3 -m venv .venv`, установить project dependencies каноническим способом, принятым в репозитории, и проверить готовность среды запуском базовых команд проекта, например `make lint`, `make test` или другого актуального target из `Makefile`.
+- Python 3.12, FastAPI, Pydantic v2;
+- SQLAlchemy 2.0 async, asyncpg, PostgreSQL 16, Alembic;
+- JWT Bearer authentication;
+- pytest, pytest-asyncio, HTTPX, Ruff, mypy;
+- Docker Compose, Nginx, GitHub Actions;
+- Kafka/Zookeeper как инфраструктурная основа для будущих этапов.
+
+## Быстрый старт
+
+Требуются Git, Make, Docker и Docker Compose. Скопируйте `.env.example` в `.env`
+и замените development-секреты при необходимости:
+
+```bash
+cp .env.example .env
+make up
+make migrate
+```
+
+После запуска:
+
+- frontend placeholder / Nginx: <http://localhost:8080/>;
+- Swagger: <http://localhost:8080/docs>;
+- API напрямую: <http://localhost:8008/>.
+
+`make down` останавливает окружение **и удаляет Compose volumes**.
+
+## Основные команды
+
+```bash
+make up                 # запустить runtime-окружение
+make down               # остановить окружение и удалить volumes
+make migrate            # применить Alembic к development DB
+make test-unit          # DB-independent unit tests
+make test-contract      # DB-independent HTTP contract tests
+make test-integration   # real PostgreSQL integration tests
+make test               # полный non-flaky набор, включая integration
+make lint               # Ruff в api-tooling
+make typecheck          # mypy в api-tooling
+```
+
+`make test-integration` и `make test` сами поднимают `postgres-test` и применяют
+к `todo_test` миграции. Подробности: [локальная разработка](docs/architecture/local-development.md)
+и [integration runbook](docs/runbooks/testing/integration_tests.md).
+
+## Тестовые слои
+
+- **Unit:** изолированная бизнес-логика без сети, БД и брокера.
+- **HTTP contract:** FastAPI routing, validation и error mapping с заменёнными
+  инфраструктурными зависимостями.
+- **Integration:** `TaskService` и `TaskRepository` через SQLAlchemy/asyncpg с
+  реальным изолированным PostgreSQL.
+
+Выделенный CI job для PostgreSQL integration-тестов запланирован, но текущие
+workflow ещё не реализуют это разделение корректно.
+
+## Документация
+
+- [Центральный индекс](docs/README.md)
+- [Текущая архитектура](docs/architecture/overview.md)
+- [Семантика Tasks API](docs/api/tasks.md)
+- [История Task 060](docs/tasks/060_user_owned_tasks_crud.md)
+- [ADRs](docs/adr/)
+- [Roadmap будущих этапов](ROADMAP.md)
+- [Исходное техническое задание и его текущие уточнения](TASK.md)

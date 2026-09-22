@@ -1,63 +1,38 @@
-# Repository Governance & CI Overview
+# Repository Governance and CI Overview
 
-Этот документ описывает правила внесения изменений в репозиторий,
-CI-пайплайны и требования к pull request'ам.
+## Current workflows
 
-## Pull Requests
+Both workflows run for pull requests and pushes to `main`.
 
-Все изменения в репозиторий вносятся через Pull Request.
+### `ci.yml`
 
-Обязательные требования:
-- используется шаблон PR
-- CI должен быть зелёным
-- изменения минимальны и сфокусированы
-- соблюдаются политики репозитория
+Current jobs are:
 
-## CI Pipelines
+- **checks:** Python 3.12, locked `uv` dependency installation, Ruff lint,
+  Ruff format check, mypy, and pytest with PostgreSQL integration tests excluded;
+- **docker-tests:** runs `make test`, which starts the isolated `postgres-test`
+  service, applies Alembic migrations, and runs the non-flaky test suite through
+  `api-tooling` against the `todo_test` database and user;
+- **migration-check:** starts a clean development PostgreSQL volume and applies
+  `alembic upgrade head` through `api-tooling`.
 
-В репозитории настроены следующие пайплайны:
-### ci.yml — Code Quality & Tests
+The split keeps host-based code-quality checks and database-independent tests
+independent of PostgreSQL, while the Docker job provides the database lifecycle
+required by integration tests. The integration cleanup safety guard continues
+to require the dedicated `todo_test` database and user.
 
-Запускается при:
-- pull_request
-- push в main
+A future CI is planned to move the PostgreSQL-backed integration suite from
+`docker-tests` into a separate `integration` job.
 
-Проверяет:
-- ruff (lint)
-- ruff (format)
-- mypy
-- pytest
+### `docker-smoke.yml`
 
-Назначение:
-- гарантировать базовое качество кода
-- не допускать регрессий
+This workflow validates Compose configuration, builds images, starts the
+runtime stack, waits for required services, checks API/Nginx HTTP availability,
+and verifies that unauthenticated `GET /auth/me` returns `401`.
 
-### docker-smoke.yml — Docker & Runtime Smoke Tests
+## Pull requests and ownership
 
-Проверяет:
-- корректность docker-compose
-- сборку образов
-- healthchecks сервисов
-- базовую доступность HTTP endpoints
-
-Назначение:
-- обнаружить инфраструктурные и runtime ошибки
-- отловить проблемы, которые не видны unit-тестами
-
-## Code Ownership
-
-В репозитории используется CODEOWNERS.
-
-Это означает:
-- изменения в определённых зонах требуют обязательного ревью
-- ответственность за код закреплена явно
-
-## Engineering Policies
-
-CI и процесс разработки опираются на следующие документы:
-- ENGINEERING_MANIFESTO.md
-- CONTRIBUTING.md
-- docs/policies/*
-- AGENTS.md (для AI-агентов)
-
-CI рассматривается как исполняемая форма этих политик.
+Changes use the PR template, require review through CODEOWNERS, must remain
+focused, and are expected to satisfy applicable repository policies. Current
+governance sources include `AGENTS.md`, `CONTRIBUTING.md`,
+`ENGINEERING_MANIFESTO.md`, accepted ADRs, and `docs/policies/`.

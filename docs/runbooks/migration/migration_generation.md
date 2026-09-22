@@ -26,7 +26,7 @@ docs/policies/MIGRATION_POLICY.md
 
 Каждая миграция обязана:
 
-- находиться в каталоге `migrations/versions`
+- находиться в каталоге `services/api_gateway/migrations/versions/`
 - появляться в `git status`
 - проходить code review
 - успешно применяться на чистой базе
@@ -62,13 +62,13 @@ make makemigration M="add users table"
 После выполнения команды новый файл должен появиться в каталоге:
 
 ```
-migrations/versions
+services/api_gateway/migrations/versions/
 ```
 
 Пример:
 
 ```
-migrations/versions/1c9c115cdf19_add_users_table.py
+services/api_gateway/migrations/versions/1c9c115cdf19_add_users_table.py
 ```
 
 Проверка:
@@ -80,7 +80,7 @@ git status
 Ожидаемый результат:
 
 ```
-new file: migrations/versions/<revision>_<message>.py
+new file: services/api_gateway/migrations/versions/<revision>_<message>.py
 ```
 
 Если файл не появился в working tree — **workflow нарушен**.
@@ -172,7 +172,7 @@ alembic upgrade head
 После проверки необходимо добавить файл в git.
 
 ```
-git add migrations/versions/<file>.py
+git add services/api_gateway/migrations/versions/<file>.py
 ```
 
 Затем выполнить коммит.
@@ -234,7 +234,7 @@ git commit -m "db(migration): add users table"
 Создание миграции считается завершённым, если:
 
 - migration script создан
-- файл появился в `migrations/versions`
+- файл появился в `services/api_gateway/migrations/versions/`
 - файл присутствует в `git status`
 - миграция успешно применяется
 - CI pipeline проходит успешно

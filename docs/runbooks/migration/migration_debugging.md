@@ -249,11 +249,11 @@ python -m alembic --version
 ```
 
 ```
-ls migrations
+ls services/api_gateway/migrations
 ```
 
 ```
-ls migrations/versions
+ls services/api_gateway/migrations/versions
 ```
 
 ---

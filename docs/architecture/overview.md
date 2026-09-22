@@ -1,50 +1,62 @@
 # Architecture Overview
 
-This repository contains a production-style training project: an event-driven TODO application built with an async Python stack (FastAPI + Pydantic v2), PostgreSQL, Kafka, Docker Compose, and CI quality gates.
+## Status: Current
 
-## Core principles (non-negotiable)
-- **PostgreSQL is the single source of truth.**
-- Kafka is a **transport / event log**, not a state store.
-- Kafka delivery is **at-least-once** → duplicates are possible.
-- Services are **loosely coupled** and communicate primarily via **events** (Kafka).
-- Public contracts are defined in `docs/contracts/*`. Event schemas live in `services/shared/schemas/*`.
+This document describes the implemented runtime architecture. Future evolution
+is explicitly separated below.
 
-## Components (high level)
-- **frontend/**: static placeholder for the future SPA client.
-- **services/todo_service**: main REST API for task management (CRUD, "done" transitions).
-- **services/auth_service**: user registration/login, JWT issuing.
-- **services/scheduler_service**: daily (00:00) digest job; emits digest-request events.
-- **services/mailer_service**: consumes events and sends emails; must be idempotent.
-- **services/api_gateway**: optional gateway/BFF layer (planned; can be used to serve SPA + route APIs).
-- **services/shared**: shared schemas/types; considered protected core.
+## Current backend
 
-## Event-driven flow (examples)
+The backend is one deployable FastAPI service, `services/api_gateway`:
 
-### A) Create task
-1. Client calls TODO API to create a task.
-2. TODO service stores the task in PostgreSQL.
-3. TODO service emits `task.created` event to Kafka topic `events`.
+```text
+services/api_gateway
+├── app/auth             JWT authentication and current-user resolution
+├── app/tasks            task schemas, routes, and business rules
+├── app/repositories     SQLAlchemy data access
+├── app/models.py        User, Task, and ProcessedEvent ORM mappings
+├── app/db.py            async engine and session factory
+└── migrations           Alembic environment and revisions
+```
 
-### B) Daily digest
-1. Scheduler service runs at 00:00 daily.
-2. Scheduler queries PostgreSQL for user stats and undone tasks.
-3. Scheduler emits `email.daily_digest.requested` event to topic `events`.
-4. Mailer service consumes the event and sends an email.
-5. Mailer enforces idempotency using `processed_events` (or equivalent mechanism).
-
-## Diagram (conceptual)
+Auth and tasks are application modules, not separate runtime services. FastAPI
+registers both routers in the same application. Nginx serves the static
+placeholder and proxies `/auth`, `/tasks`, health, OpenAPI, and Swagger traffic
+to that application.
 
 ```mermaid
-flowchart LR
-  SPA[frontend/index.html (placeholder)] -->|HTTP| GW[api_gateway (optional)]
-  SPA -->|HTTP| TODO[todo_service]
-  SPA -->|HTTP| AUTH[auth_service]
+  CLIENT[Client / Swagger] --> NGINX[Nginx]
+  NGINX --> API[api_gateway: FastAPI]
+  API --> AUTH[auth module]
+  API --> TASKS[tasks module]
+  AUTH --> REPOS[repositories]
+  TASKS --> REPOS
+  REPOS --> DB[(PostgreSQL)]
+```
 
-  TODO -->|produce events| KAFKA[(Kafka: topic 'events')]
-  SCHED[scheduler_service] -->|produce digest event| KAFKA
+## Current request boundaries
 
-  KAFKA -->|consume| MAIL[mailer_service]
-  TODO --> DB[(PostgreSQL)]
-  AUTH --> DB
-  SCHED --> DB
-  MAIL --> DB
+- Routes own HTTP validation, dependency injection, status codes, and error mapping.
+- Services own business rules and write transaction boundaries.
+- Repositories own owner-scoped SQLAlchemy operations but do not commit.
+- `get_current_user` decodes the JWT and revalidates the user in PostgreSQL.
+- Task routes pass only `current_user.id` into the task service.
+
+PostgreSQL is the current persistent source of truth. Database access uses an
+async SQLAlchemy engine and asyncpg; schema evolution uses Alembic.
+
+## Current supporting containers
+
+Docker Compose includes PostgreSQL, Kafka/Zookeeper, API, scheduler and mailer
+images, Nginx, and the `api-tooling` profile. Only the API/PostgreSQL behavior
+described above is current product behavior. Scheduler and mailer entry points
+are placeholders, and the presence of Kafka infrastructure does not make task
+CRUD event-driven.
+
+## Planned evolution
+
+Future roadmap work may introduce Kafka producers/consumers, an outbox,
+operational scheduler and mailer workflows, background workers, and other
+independently deployable components. Those are target-state ideas, not current
+runtime claims. Backend decomposition should occur only for a concrete
+architectural or operational reason.

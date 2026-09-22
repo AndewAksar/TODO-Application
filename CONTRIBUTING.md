@@ -159,23 +159,26 @@ Docker-режим максимально приближен к CI.
 - Alembic
 - dev/test зависимости
 
-Линтер
+Линтер:
 ```bash
   make lint
 ```
-Форматирование
+Форматирование:
 ```bash
   make format
 ```
-Проверка типов
+Проверка типов:
 ```bash
   make typecheck
 ```
-Тесты
+Тесты:
 ```bash
   make test
 ```
-
+Для проверки всех integration-тестов через Docker:
+```bash
+  make test-integration
+```
 ---
 
 ## Минимальный набор перед Pull Request

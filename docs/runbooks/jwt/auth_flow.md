@@ -1,5 +1,10 @@
 # Runbook: Auth flow
 
+## Status: Current and canonical
+
+This is the canonical auth-flow runbook. Older overlapping files under
+`docs/runbooks/security/` are deprecated redirects.
+
 ## 1. Назначение
 
 Этот документ описывает **канонический auth flow** в `services/api_gateway` для baseline JWT-аутентификации.

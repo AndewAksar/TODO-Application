@@ -1,4 +1,4 @@
-# ADR-000X: Separation of Runtime Image and Tooling Workspace
+# ADR-0007: Separation of Runtime Image and Tooling Workspace
 
 ## Status
 Accepted

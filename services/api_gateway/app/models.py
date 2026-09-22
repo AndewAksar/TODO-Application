@@ -72,13 +72,23 @@ class Task(Base):
 
     description: Mapped[str | None] = mapped_column(
         Text,
-        nullable=False,
+        nullable=True,
     )
 
-    done: Mapped[bool] = mapped_column(
+    is_done: Mapped[bool] = mapped_column(
         Boolean,
         nullable=False,
         server_default="false",
+    )
+
+    done_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+
+    due_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
     )
 
     created_at: Mapped[datetime] = mapped_column(
@@ -87,12 +97,16 @@ class Task(Base):
         nullable=False,
     )
 
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
+    )
+
     user: Mapped[User] = relationship(back_populates="tasks")
 
-    __table_args__ = (
-        Index("ix_tasks_user_id", "user_id"),
-        Index("ix_tasks_user_id_done", "user_id", "done"),
-    )
+    __table_args__ = (Index("ix_tasks_user_id", "user_id"),)
 
 
 class ProcessedEvent(Base):
