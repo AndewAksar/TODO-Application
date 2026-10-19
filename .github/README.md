@@ -2,7 +2,7 @@
 
 ## Current workflows
 
-Both workflows run for pull requests and pushes to `main`.
+The single `CI` workflow runs for pull requests and pushes to `main`.
 
 ### `ci.yml`
 
@@ -14,7 +14,10 @@ Current jobs are:
   service, applies Alembic migrations, and runs the non-flaky test suite through
   `api-tooling` against the `todo_test` database and user;
 - **migration-check:** starts a clean development PostgreSQL volume and applies
-  `alembic upgrade head` through `api-tooling`.
+    `alembic upgrade head` through `api-tooling`;
+- **docker-smoke:** validates Compose configuration, builds images, starts the
+  runtime stack, waits for required services, checks API/Nginx HTTP availability,
+  and verifies that unauthenticated `GET /auth/me` returns `401`.
 
 The split keeps host-based code-quality checks and database-independent tests
 independent of PostgreSQL, while the Docker job provides the database lifecycle
@@ -23,12 +26,6 @@ to require the dedicated `todo_test` database and user.
 
 A future CI is planned to move the PostgreSQL-backed integration suite from
 `docker-tests` into a separate `integration` job.
-
-### `docker-smoke.yml`
-
-This workflow validates Compose configuration, builds images, starts the
-runtime stack, waits for required services, checks API/Nginx HTTP availability,
-and verifies that unauthenticated `GET /auth/me` returns `401`.
 
 ## Pull requests and ownership
 
