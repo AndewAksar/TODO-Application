@@ -14,19 +14,20 @@ do not replace current architecture, API documentation, or accepted ADRs.
 
 ## Next planned task
 
-- 070 — [Domain event contracts](070_domain_event_contracts.md) (`Status: Planned`)
+- 070 — [070_ci_cd_pipeline_foundation](080_domain_event_contracts.md) (`Status: Planned`)
 
 ## Reserved future task files
 
 The following files are empty reservations and are not implemented features:
 
-- 080 — API Kafka producer
-- 090 — API outbox pattern
-- 100 — Scheduler daily digest flow
-- 110 — Mailer Kafka consumer
-- 120 — Mailer idempotency
-- 130 — Static frontend
-- 140 — Final testing and documentation
+- 080 - domain event contracts
+- 090 — API Kafka producer
+- 100 — API outbox pattern
+- 110 — Scheduler daily digest flow
+- 120 — Mailer Kafka consumer
+- 130 — Mailer idempotency
+- 140 — Static frontend
+- 150 — Final testing and documentation
 
 ## Task rules
 

@@ -18,10 +18,10 @@ historical implementation records, and future plans.
 
 ## Tasks and implementation history
 
-- [Task index](tasks/000-index.md)
+- [Task index](tasks/000_index.md)
 - [Task 050 — JWT authentication](tasks/050_auth_jwt.md)
 - [Task 060 — User-owned tasks CRUD](tasks/060_user_owned_tasks_crud.md)
-- [Task 070 — planned domain event contracts](tasks/070_domain_event_contracts.md)
+- [Task 070 — planned domain event contracts](tasks/080_domain_event_contracts.md)
 
 Task documents preserve implementation history. They do not replace current
 architecture or API documentation.
