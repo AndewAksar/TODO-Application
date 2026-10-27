@@ -1,0 +1,65 @@
+name: Deploy rehearsal
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: API image tag from GHCR
+        required: true
+        default: d74e16d0b432d7059299517f8d5111c9acc866f0
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-rehearsal
+  cancel-in-progress: false
+
+jobs:
+  rehearsal:
+    name: Rehearse production deployment
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Check deployment script syntax
+        run: bash -n deploy/scripts/deploy.sh
+
+      - name: Create temporary deployment environment
+        env:
+          API_IMAGE_TAG: ${{ inputs.image_tag }}
+        run: |
+          db_password="$(openssl rand -hex 24)"
+          jwt_secret="$(openssl rand -hex 32)"
+
+          {
+            printf 'API_IMAGE=ghcr.io/andewaksar/todo-application-api:%s\n' "${API_IMAGE_TAG}"
+            printf 'POSTGRES_DB=todo\n'
+            printf 'POSTGRES_USER=todo_app\n'
+            printf 'POSTGRES_PASSWORD=%s\n' "${db_password}"
+            printf 'DATABASE_URL=postgresql+asyncpg://todo_app:%s@postgres:5432/todo\n' "${db_password}"
+            printf 'JWT_SECRET_KEY=%s\n' "${jwt_secret}"
+            printf 'JWT_ALGORITHM=HS256\n'
+            printf 'JWT_EXPIRES_MINUTES=30\n'
+          } > deploy/.env.rehearsal
+
+          chmod 600 deploy/.env.rehearsal
+
+      - name: Run deployment rehearsal
+        env:
+          ENV_FILE: ${{ github.workspace }}/deploy/.env.rehearsal
+          WAIT_TIMEOUT: "120"
+          HEALTH_URL: http://127.0.0.1/health
+        run: bash deploy/scripts/deploy.sh
+
+      - name: Clean up rehearsal containers
+        if: always()
+        continue-on-error: true
+        run: |
+          docker compose \
+            --env-file deploy/.env.rehearsal \
+            -f deploy/compose.prod.yml \
+            down --volumes --remove-orphans
