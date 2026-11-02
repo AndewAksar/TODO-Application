@@ -1,0 +1,252 @@
+name: Deploy production
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "API image tag from GHCR"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-deployment
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy to production VDS
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Validate deployment input
+        env:
+          IMAGE_TAG: ${{ inputs.image_tag }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          if [[ "${GITHUB_REF}" != "refs/heads/main" ]]; then
+            echo "Production deployment is allowed only from main."
+            exit 1
+          fi
+
+          if [[ ! "${IMAGE_TAG}" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "image_tag must be a full 40-character lowercase Git commit SHA."
+            exit 1
+          fi
+
+          echo "Deploying API image tag: ${IMAGE_TAG}"
+
+      - name: Configure SSH
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          if [[ -z "${DEPLOY_SSH_KEY}" ]]; then
+            echo "DEPLOY_SSH_KEY secret is missing."
+            exit 1
+          fi
+
+          if [[ -z "${DEPLOY_KNOWN_HOSTS}" ]]; then
+            echo "DEPLOY_KNOWN_HOSTS secret is missing."
+            exit 1
+          fi
+
+          install -d -m 0700 "${HOME}/.ssh"
+
+          printf '%s\n' "${DEPLOY_SSH_KEY}" \
+            > "${HOME}/.ssh/deploy_key"
+
+          printf '%s\n' "${DEPLOY_KNOWN_HOSTS}" \
+            > "${HOME}/.ssh/known_hosts"
+
+          chmod 0600 "${HOME}/.ssh/deploy_key"
+          chmod 0644 "${HOME}/.ssh/known_hosts"
+
+          ssh-keygen -y -f "${HOME}/.ssh/deploy_key" >/dev/null
+
+      - name: Check production server
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          if [[ -z "${DEPLOY_HOST}" ]]; then
+            echo "DEPLOY_HOST secret is missing."
+            exit 1
+          fi
+
+          if [[ ! "${DEPLOY_PORT}" =~ ^[0-9]{1,5}$ ]]; then
+            echo "DEPLOY_PORT must contain a valid numeric port."
+            exit 1
+          fi
+
+          if [[ ! "${DEPLOY_USER}" =~ ^[a-z_][a-z0-9_-]*$ ]]; then
+            echo "DEPLOY_USER has an invalid format."
+            exit 1
+          fi
+
+          ssh \
+            -i "${HOME}/.ssh/deploy_key" \
+            -p "${DEPLOY_PORT}" \
+            -o BatchMode=yes \
+            -o StrictHostKeyChecking=yes \
+            -o ConnectTimeout=10 \
+            "${DEPLOY_USER}@${DEPLOY_HOST}" \
+            '
+              set -eu
+              command -v docker >/dev/null
+              test -d /opt/todo-application
+              test -r /opt/todo-application/.env
+              echo "Production server is ready for deployment."
+            '
+
+      - name: Upload deployment files
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          REMOTE="${DEPLOY_USER}@${DEPLOY_HOST}"
+          STAGING_DIR="/opt/todo-application/.incoming-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+
+          ssh \
+            -i "${HOME}/.ssh/deploy_key" \
+            -p "${DEPLOY_PORT}" \
+            -o BatchMode=yes \
+            -o StrictHostKeyChecking=yes \
+            "${REMOTE}" \
+            "install -d -m 0750 '${STAGING_DIR}'"
+
+          scp \
+            -i "${HOME}/.ssh/deploy_key" \
+            -P "${DEPLOY_PORT}" \
+            -o BatchMode=yes \
+            -o StrictHostKeyChecking=yes \
+            deploy/compose.prod.yml \
+            "${REMOTE}:${STAGING_DIR}/compose.prod.yml"
+
+          scp \
+            -i "${HOME}/.ssh/deploy_key" \
+            -P "${DEPLOY_PORT}" \
+            -o BatchMode=yes \
+            -o StrictHostKeyChecking=yes \
+            deploy/nginx/default.conf \
+            "${REMOTE}:${STAGING_DIR}/default.conf"
+
+          scp \
+            -i "${HOME}/.ssh/deploy_key" \
+            -P "${DEPLOY_PORT}" \
+            -o BatchMode=yes \
+            -o StrictHostKeyChecking=yes \
+            deploy/scripts/deploy.sh \
+            "${REMOTE}:${STAGING_DIR}/deploy.sh"
+
+          ssh \
+            -i "${HOME}/.ssh/deploy_key" \
+            -p "${DEPLOY_PORT}" \
+            -o BatchMode=yes \
+            -o StrictHostKeyChecking=yes \
+            "${REMOTE}" \
+            bash -s -- "${STAGING_DIR}" <<'REMOTE_SCRIPT'
+          set -Eeuo pipefail
+
+          staging_dir="$1"
+          deploy_dir="/opt/todo-application"
+
+          test -s "${staging_dir}/compose.prod.yml"
+          test -s "${staging_dir}/default.conf"
+          test -s "${staging_dir}/deploy.sh"
+          bash -n "${staging_dir}/deploy.sh"
+
+          install -m 0640 \
+            "${staging_dir}/compose.prod.yml" \
+            "${deploy_dir}/compose.prod.yml"
+
+          install -m 0640 \
+            "${staging_dir}/default.conf" \
+            "${deploy_dir}/nginx/default.conf"
+
+          install -m 0750 \
+            "${staging_dir}/deploy.sh" \
+            "${deploy_dir}/scripts/deploy.sh"
+
+          rm -r -- "${staging_dir}"
+          REMOTE_SCRIPT
+
+      - name: Deploy selected API image
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          IMAGE_TAG: ${{ inputs.image_tag }}
+        shell: bash
+        run: |
+            set -Eeuo pipefail
+
+            REMOTE="${DEPLOY_USER}@${DEPLOY_HOST}"
+
+            timeout 15m ssh \
+              -i "${HOME}/.ssh/deploy_key" \
+              -p "${DEPLOY_PORT}" \
+              -o BatchMode=yes \
+              -o StrictHostKeyChecking=yes \
+              "${REMOTE}" \
+              bash -s -- "${IMAGE_TAG}" <<'REMOTE_SCRIPT'
+            set -Eeuo pipefail
+
+            image_tag="$1"
+            export API_IMAGE="ghcr.io/andewaksar/todo-application-api:${image_tag}"
+
+            cd /opt/todo-application
+            ./scripts/deploy.sh
+            REMOTE_SCRIPT
+
+      - name: Check public health endpoint
+        env:
+          HEALTH_URL: ${{ secrets.PRODUCTION_HEALTH_URL }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          if [[ ! "${HEALTH_URL}" =~ ^https?:// ]]; then
+            echo "PRODUCTION_HEALTH_URL must be an HTTP or HTTPS URL."
+            exit 1
+          fi
+
+          curl \
+            --fail \
+            --silent \
+            --show-error \
+            --retry 5 \
+            --retry-all-errors \
+            --connect-timeout 5 \
+            --max-time 15 \
+            "${HEALTH_URL}"
+
+          echo
+          echo "Production health check passed."
+
+      - name: Remove temporary SSH credentials
+        if: always()
+        shell: bash
+        run: |
+          rm -f \
+            "${HOME}/.ssh/deploy_key" \
+            "${HOME}/.ssh/known_hosts"
