@@ -45,6 +45,7 @@ architecture or API documentation.
 
 ## Current runbooks
 
+- [CI/CD and deployment](runbooks/deployment/ci_cd.md)
 - [Migration overview](runbooks/db_migration.md)
 - [Generate migrations](runbooks/migration/migration_generation.md)
 - [Apply migrations](runbooks/migration/migration_apply.md)
